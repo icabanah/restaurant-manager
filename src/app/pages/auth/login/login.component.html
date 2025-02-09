@@ -1,0 +1,51 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Login</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <ion-list>
+      <ion-item>
+        <ion-label position="floating">Email</ion-label>
+        <ion-input type="email" formControlName="email"></ion-input>
+      </ion-item>
+      
+      @if (loginForm.get('email')?.touched && loginForm.get('email')?.errors) {
+        @if (loginForm.get('email')?.errors?.['required']) {
+          <ion-text color="danger">
+            El email es requerido
+          </ion-text>
+        }
+        @if (loginForm.get('email')?.errors?.['email']) {
+          <ion-text color="danger">
+            El email no es válido
+          </ion-text>
+        }
+      }
+
+      <ion-item>
+        <ion-label position="floating">Contraseña</ion-label>
+        <ion-input type="password" formControlName="password"></ion-input>
+      </ion-item>
+      
+      @if (loginForm.get('password')?.touched && loginForm.get('password')?.errors) {
+        @if (loginForm.get('password')?.errors?.['required']) {
+          <ion-text color="danger">
+            La contraseña es requerida
+          </ion-text>
+        }
+        @if (loginForm.get('password')?.errors?.['minlength']) {
+          <ion-text color="danger">
+            La contraseña debe tener al menos 6 caracteres
+          </ion-text>
+        }
+      }
+    </ion-list>
+
+    <ion-button expand="block" type="submit" [disabled]="!loginForm.valid">
+      Iniciar Sesión
+    </ion-button>
+  </form>
+</ion-content>

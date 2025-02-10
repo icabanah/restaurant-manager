@@ -13,5 +13,9 @@ export const routes: Routes = [
   {
     path: 'home',
     loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent)
+  },
+  {
+    path: 'admin/menus',
+    loadComponent: () => import('./pages/admin/menu-management/menu-management.component').then(m => m.MenuManagementComponent)
   }
 ];

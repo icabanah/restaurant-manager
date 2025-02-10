@@ -1,3 +1,103 @@
-<p>
-  menu-management works!
-</p>
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Gestión de menús</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadMenus()">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <form [formGroup]="menuForm" (ngSubmit)="onSubmit()">
+
+    <!-- Filtro por fecha -->
+    <ion-item>
+      <ion-label>Filtrar por fecha</ion-label>
+      <ion-datetime-button datetime="date-filter"></ion-datetime-button>
+      <ion-modal [keepContentsMounted]="true">
+        <ng-template>
+          <ion-datetime id="date-filter" presentation="date" [value]="selectedDate"
+            (ionChange)="onDateChange($event)"></ion-datetime>
+        </ng-template>
+      </ion-modal>
+    </ion-item>
+
+
+    <ion-list>
+      <ion-item>
+        <ion-label position="floating">Nombre</ion-label>
+        <ion-input formControlName="name" type="text"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Descripción</ion-label>
+        <ion-textarea formControlName="description"></ion-textarea>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Fecha</ion-label>
+        <ion-input formControlName="date" type="date"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Precio</ion-label>
+        <ion-input formControlName="price" type="number" [min]="0" step="0.01"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Máximo de Órdenes</ion-label>
+        <ion-input formControlName="maxOrders" type="number" [min]="1" step="1"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Activo</ion-label>
+        <ion-toggle formControlName="active"></ion-toggle>
+      </ion-item>
+    </ion-list>
+
+    <ion-button type="submit" [disabled]="!menuForm.valid">
+      {{isEditing ? 'Actualizar' : 'Crear'}} platillo
+    </ion-button>
+  </form>
+
+  <!-- Menus disponibles -->
+  <ion-list>
+    <ion-list-header>
+      <ion-label>Menús Disponibles</ion-label>
+    </ion-list-header>
+
+    @for (menu of menus; track menu.id) {
+      <ion-item>
+        <ion-label>
+          <h2>{{ menu.name }}</h2>
+          <p>{{ menu.description }}</p>
+          <p>
+            <ion-text color="medium">
+              Fecha: {{ menu.date | date:'fullDate' }}
+            </ion-text>
+          </p>
+          <p>
+            <ion-badge color="primary">
+              Precio: S/{{ menu.price | number:'1.2-2' }}
+            </ion-badge>
+            <ion-badge color="secondary" class="ion-margin-start">
+              Órdenes: {{ menu.currentOrders }}/{{ menu.maxOrders }}
+            </ion-badge>
+          </p>
+        </ion-label>
+        <ion-button slot="end" fill="clear" (click)="editMenu(menu)">
+          <ion-icon name="create-outline"></ion-icon>
+        </ion-button>
+        <ion-button slot="end" fill="clear" color="danger" (click)="confirmDelete(menu)">
+          <ion-icon name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    }
+
+    @if (menus.length === 0) {
+      <ion-item>
+        <ion-label class="ion-text-center">
+          No hay menús disponibles para esta fecha
+        </ion-label>
+      </ion-item>
+    }
+  </ion-list>
+</ion-content>

@@ -1,5 +1,17 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
+import { 
+  Auth, 
+  signInWithEmailAndPassword,
+  signOut,
+  authState 
+} from '@angular/fire/auth';
+import { 
+  Firestore, 
+  doc, 
+  getDoc, 
+  setDoc 
+} from '@angular/fire/firestore';
 
 interface User {
   id: string;
@@ -7,37 +19,57 @@ interface User {
   name: string;
   role: 'admin' | 'user';
   active: boolean;
-  companyId?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private auth = inject(Auth);
+  private firestore = inject(Firestore);
   private router = inject(Router);
   
-  // Signals reemplazan a BehaviorSubject
-  private userSignal = signal<User | null>(null);
-  currentUser = computed(() => this.userSignal());
+  currentUser = signal<User | null>(null);
+
+  constructor() {
+    // Observar cambios en el estado de autenticación
+    authState(this.auth).subscribe(async (firebaseUser) => {
+      if (firebaseUser) {
+        // Obtener datos adicionales del usuario desde Firestore
+        const userDoc = await getDoc(doc(this.firestore, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          this.currentUser.set({
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            ...userDoc.data() as Omit<User, 'id' | 'email'>
+          });
+        }
+      } else {
+        this.currentUser.set(null);
+      }
+    });
+  }
 
   async login(email: string, password: string): Promise<boolean> {
-    const mockUser: User = {
-      id: '1',
-      email,
-      name: 'Usuario Test',
-      role: email.includes('admin') ? 'admin' : 'user',
-      active: true,
-      companyId: 'COMPANY_1'
-    };
-    
-    this.userSignal.set(mockUser);
-    return true;
+    try {
+      const result = await signInWithEmailAndPassword(this.auth, email, password);
+      return !!result.user;
+    } catch (error) {
+      console.error('Error en login:', error);
+      return false;
+    }
   }
 
-  logout(): void {
-    this.userSignal.set(null);
-    this.router.navigate(['/login']);
+  async logout(): Promise<void> {
+    try {
+      await signOut(this.auth);
+      this.router.navigate(['/login']);
+    } catch (error) {
+      console.error('Error en logout:', error);
+    }
   }
 
-  isAdmin = computed(() => this.currentUser()?.role === 'admin');
+  isAdmin(): boolean {
+    return this.currentUser()?.role === 'admin';
+  }
 }

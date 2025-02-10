@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Gestión de menús</ion-title>
+    <ion-title>Gestión de Menús</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="loadMenus()">
         <ion-icon name="refresh-outline"></ion-icon>
@@ -9,43 +9,53 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content class="ion-padding">
   <form [formGroup]="menuForm" (ngSubmit)="onSubmit()">
-
-    <!-- Filtro por fecha -->
-    <ion-item>
-      <ion-label>Filtrar por fecha</ion-label>
-      <ion-datetime-button datetime="date-filter"></ion-datetime-button>
-      <ion-modal [keepContentsMounted]="true">
-        <ng-template>
-          <ion-datetime id="date-filter" presentation="date" [value]="selectedDate"
-            (ionChange)="onDateChange($event)"></ion-datetime>
-        </ng-template>
-      </ion-modal>
-    </ion-item>
-
-
     <ion-list>
       <ion-item>
-        <ion-label position="floating">Nombre</ion-label>
+        <ion-label position="floating">Nombre del Menú</ion-label>
         <ion-input formControlName="name" type="text"></ion-input>
       </ion-item>
+      @if (menuForm.get('name')?.touched && menuForm.get('name')?.errors?.['required']) {
+      <ion-text color="danger" class="ion-padding-start">
+        El nombre es requerido
+      </ion-text>
+      }
+
       <ion-item>
         <ion-label position="floating">Descripción</ion-label>
         <ion-textarea formControlName="description"></ion-textarea>
       </ion-item>
+      @if (menuForm.get('description')?.touched && menuForm.get('description')?.errors?.['required']) {
+      <ion-text color="danger" class="ion-padding-start">
+        La descripción es requerida
+      </ion-text>
+      }
+
       <ion-item>
         <ion-label position="floating">Fecha</ion-label>
         <ion-input formControlName="date" type="date"></ion-input>
       </ion-item>
+      @if (menuForm.get('date')?.touched && menuForm.get('date')?.errors?.['required']) {
+      <ion-text color="danger" class="ion-padding-start">
+        La fecha es requerida
+      </ion-text>
+      }
+
       <ion-item>
         <ion-label position="floating">Precio</ion-label>
         <ion-input formControlName="price" type="number" [min]="0" step="0.01"></ion-input>
       </ion-item>
-      <ion-item>
-        <ion-label position="floating">Máximo de Órdenes</ion-label>
-        <ion-input formControlName="maxOrders" type="number" [min]="1" step="1"></ion-input>
-      </ion-item>
+      @if (menuForm.get('price')?.touched && menuForm.get('price')?.errors) {
+      <ion-text color="danger" class="ion-padding-start">
+        @if (menuForm.get('price')?.errors?.['required']) {
+        El precio es requerido
+        }
+        @if (menuForm.get('price')?.errors?.['min']) {
+        El precio debe ser mayor a 0
+        }
+      </ion-text>
+      }
 
       <ion-item>
         <ion-label>Activo</ion-label>
@@ -53,51 +63,61 @@
       </ion-item>
     </ion-list>
 
-    <ion-button type="submit" [disabled]="!menuForm.valid">
-      {{isEditing ? 'Actualizar' : 'Crear'}} platillo
+    <ion-button expand="block" type="submit" [disabled]="!menuForm.valid">
+      {{ isEditing ? 'Actualizar' : 'Crear' }} Menú
     </ion-button>
+
+    @if (isEditing) {
+    <ion-button expand="block" fill="outline" (click)="menuForm.reset({active: true}); isEditing = false">
+      Cancelar Edición
+    </ion-button>
+    }
   </form>
 
-  <!-- Menus disponibles -->
-  <ion-list>
+  <ion-list class="ion-margin-top">
     <ion-list-header>
       <ion-label>Menús Disponibles</ion-label>
     </ion-list-header>
 
     @for (menu of menus; track menu.id) {
-      <ion-item>
-        <ion-label>
-          <h2>{{ menu.name }}</h2>
-          <p>{{ menu.description }}</p>
-          <p>
-            <ion-text color="medium">
-              Fecha: {{ menu.date | date:'fullDate' }}
-            </ion-text>
-          </p>
-          <p>
-            <ion-badge color="primary">
-              Precio: S/{{ menu.price | number:'1.2-2' }}
-            </ion-badge>
-            <ion-badge color="secondary" class="ion-margin-start">
-              Órdenes: {{ menu.currentOrders }}/{{ menu.maxOrders }}
-            </ion-badge>
-          </p>
-        </ion-label>
-        <ion-button slot="end" fill="clear" (click)="editMenu(menu)">
-          <ion-icon name="create-outline"></ion-icon>
-        </ion-button>
-        <ion-button slot="end" fill="clear" color="danger" (click)="confirmDelete(menu)">
-          <ion-icon name="trash-outline"></ion-icon>
-        </ion-button>
-      </ion-item>
+    <ion-item>
+      <ion-label>
+        <h2>{{ menu.name }}</h2>
+        <p>{{ menu.description }}</p>
+        <p>
+          <ion-text color="medium">
+            Fecha: {{ menu.date | date:'fullDate' }}
+          </ion-text>
+        </p>
+        <div class="ion-margin-top">
+          <ion-badge color="primary">
+            Precio: S/{{ menu.price | number:'1.2-2' }}
+          </ion-badge>
+          <ion-badge color="secondary" class="ion-margin-start">
+            Pedidos: {{ menu.currentOrders }}
+          </ion-badge>
+          @if (menu.active) {
+          <ion-badge color="success" class="ion-margin-start">Activo</ion-badge>
+          } @else {
+          <ion-badge color="medium" class="ion-margin-start">Inactivo</ion-badge>
+          }
+        </div>
+      </ion-label>
+      <ion-button slot="end" fill="clear" [disabled]="!canFullyEdit(menu)" (click)="editMenu(menu)">
+        <ion-icon name="create-outline"></ion-icon>
+      </ion-button>
+      <ion-button slot="end" fill="clear" color="danger" [disabled]="!canDelete(menu)" (click)="deleteMenu(menu)">
+        <ion-icon name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-item>
     }
 
     @if (menus.length === 0) {
-      <ion-item>
-        <ion-label class="ion-text-center">
-          No hay menús disponibles para esta fecha
-        </ion-label>
-      </ion-item>
+    <ion-item>
+      <ion-label class="ion-text-center">
+        No hay menús disponibles
+      </ion-label>
+    </ion-item>
     }
   </ion-list>
 </ion-content>

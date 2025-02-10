@@ -1,7 +1,17 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { 
+  Firestore, 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  getDocs,
+  doc,
+  updateDoc 
+} from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 
-interface Order {
+export interface Order {
   id: string;
   userId: string;
   menuId: string;
@@ -21,49 +31,61 @@ interface Order {
   providedIn: 'root'
 })
 export class OrderService {
+  private firestore = inject(Firestore);
   private authService = inject(AuthService);
-  private ordersSignal = signal<Order[]>([]);
-  orders = computed(() => this.ordersSignal());
-
-  // Computed signal para órdenes del usuario actual
-  userOrders = computed(() => {
-    const userId = this.authService.currentUser()?.id;
-    return this.orders().filter(order => order.userId === userId);
-  });
 
   async createOrder(menuId: string, consumptionDate: Date, isEmergency = false): Promise<string> {
     const user = this.authService.currentUser();
     if (!user) throw new Error('Usuario no autenticado');
 
-    const newOrder: Order = {
-      id: Date.now().toString(),
+    const orderData: Omit<Order, 'id'> = {
       userId: user.id,
       menuId,
       orderDate: new Date(),
       consumptionDate,
-      status: 'pending',
+      status: isEmergency ? 'emergency' : 'pending',
       qrCode: this.generateQRCode(),
       isEmergency,
       cost: {
-        total: 0,
+        total: 0, // Se calculará basado en el menú
         companyShare: 0,
         employeeShare: 0
       }
     };
 
-    this.ordersSignal.update(orders => [...orders, newOrder]);
-    return newOrder.id;
+    const docRef = await addDoc(collection(this.firestore, 'orders'), orderData);
+    return docRef.id;
+  }
+
+  async getUserOrders(): Promise<Order[]> {
+    const user = this.authService.currentUser();
+    if (!user) throw new Error('Usuario no autenticado');
+
+    const q = query(
+      collection(this.firestore, 'orders'),
+      where('userId', '==', user.id)
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data() as Omit<Order, 'id'>,
+      orderDate: new Date(doc.data()['orderDate']),
+      consumptionDate: new Date(doc.data()['consumptionDate'])
+    }));
   }
 
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
-    this.ordersSignal.update(orders => 
-      orders.map(order => 
-        order.id === orderId ? { ...order, status } : order
-      )
-    );
+    const orderRef = doc(this.firestore, 'orders', orderId);
+    await updateDoc(orderRef, { status });
   }
 
-  private generateQRCode(): string {
-    return `QR-${Date.now()}`;
+  async createEmergencyOrder(menuId: string): Promise<string> {
+    return this.createOrder(menuId, new Date(), true);
+  }
+
+  private generateQRCode(): string { // Genera un código QR único
+    const user = this.authService.currentUser();
+    return `ORDER-${user?.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }

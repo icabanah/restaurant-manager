@@ -1,34 +1,30 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-// import { IonicModule } from '@ionic/angular/standalone';
 import {
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonContent, 
-  IonButtons, 
-  IonButton, 
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButtons,
+  IonButton,
   IonIcon,
   IonList,
-  IonListHeader,
   IonItem,
   IonLabel,
   IonInput,
   IonTextarea,
   IonToggle,
-  IonToast,
-  IonDatetime,
-  IonDatetimeButton,
-  IonModal,
   IonBadge,
-  IonText
+  IonText,
+  ToastController,
+  AlertController,
+  IonListHeader
 } from '@ionic/angular/standalone';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MenuService, Menu } from '../../../services/menu.service';
+import { CommonModule } from '@angular/common';
 import { inject } from '@angular/core';
 import { addIcons } from 'ionicons';
-import { checkmarkOutline, createOutline, refreshOutline, trashOutline, warningOutline } from 'ionicons/icons';
-import { AlertController, ToastController } from '@ionic/angular';
+import { refreshOutline, createOutline, trashOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-menu-management',
@@ -45,19 +41,15 @@ import { AlertController, ToastController } from '@ionic/angular';
     IonButton,
     IonIcon,
     IonList,
-    IonListHeader,
     IonItem,
     IonLabel,
     IonInput,
     IonTextarea,
     IonToggle,
-    // IonToast, 
-    IonDatetimeButton,
-    IonDatetime,
-    IonModal,
-    IonText,
     IonBadge,
-
+    IonText,
+    IonListHeader
+    // IonDatetime
   ]
 })
 export class MenuManagementComponent implements OnInit {
@@ -70,73 +62,49 @@ export class MenuManagementComponent implements OnInit {
     name: ['', Validators.required],
     description: ['', Validators.required],
     date: ['', Validators.required],
-    price: ['', [
-      Validators.required,
-      Validators.min(0),
-      Validators.pattern(/^\d*\.?\d*$/)
-    ]],
-    maxOrders: ['', [
-      Validators.required,
-      Validators.min(1),
-      Validators.pattern(/^\d+$/)
-    ]],
+    price: ['', [Validators.required, Validators.min(0), Validators.pattern(/^\d*\.?\d*$/)]],
     active: [true]
   });
 
   menus: Menu[] = [];
-  isEditing = false; // Flag to determine if we are editing an existing menu
+  isEditing = false;
   currentMenuId: string | null = null;
 
-  selectedDate = new Date().toISOString();
-
   constructor() {
-    addIcons({
-      refreshOutline, 
-      createOutline, 
-      trashOutline,
-      warningOutline,
-      checkmarkOutline
-     });
-  }
-
-  // Método para mostrar mensajes
-  private async showToast(message: string, color: 'success' | 'danger' = 'success') {
-    const toast = await this.toastController.create({
-      message,
-      duration: 2000,
-      color,
-      position: 'top',
-      icon: color === 'success' ? 'checkmark-outline' : 'warning-outline'
-    });
-    await toast.present();
+    addIcons({ refreshOutline, createOutline, trashOutline });
   }
 
   async ngOnInit() {
-    console.log('Cargando menus...');
     await this.loadMenus();
   }
 
-  async onDateChange(event: CustomEvent) {
-    this.selectedDate = event.detail.value;
-    await this.loadMenus(new Date(this.selectedDate));
+  // Métodos públicos para el template
+  canFullyEdit(menu: Menu): boolean {
+    return this.menuService.canFullyEdit(menu);
   }
-  
-  async loadMenus(date: Date = new Date()) {
+
+  canDelete(menu: Menu): boolean {
+    return this.menuService.canDelete(menu);
+  }
+
+  async loadMenus() {
     try {
-      this.menus = await this.menuService.getMenusForDate(date);
+      const today = new Date();
+      this.menus = await this.menuService.getMenusForDate(today);
     } catch (error) {
-      await this.showToast('Error al cargar los menús', 'danger');
+      await this.showToast('Error al cargar menús', 'danger');
     }
   }
+
   async onSubmit() {
     if (this.menuForm.valid) {
       try {
-        const menuData = { // Convert form data to Menu object
+        const menuData = {
           ...this.menuForm.value,
           date: new Date(this.menuForm.value.date)
         };
 
-        if (this.isEditing && this.currentMenuId) { // Update existing menu
+        if (this.isEditing && this.currentMenuId) {
           await this.menuService.updateMenu(this.currentMenuId, menuData);
           await this.showToast('Menú actualizado correctamente');
         } else {
@@ -144,7 +112,7 @@ export class MenuManagementComponent implements OnInit {
           await this.showToast('Menú creado correctamente');
         }
 
-        this.menuForm.reset({ active: true }); // Reset form
+        this.menuForm.reset({ active: true });
         this.isEditing = false;
         this.currentMenuId = null;
         await this.loadMenus();
@@ -154,40 +122,31 @@ export class MenuManagementComponent implements OnInit {
     }
   }
 
-  async editMenu(menu: Menu) {
+  editMenu(menu: Menu) {
     if (!menu.id) {
-      console.error('Menu must have an id to be edited', menu);
-      return
-    } // Menu must have an id to be edited
+      console.error('Menu sin ID');
+      return;
+    }
 
     this.isEditing = true;
     this.currentMenuId = menu.id;
     this.menuForm.patchValue({
       name: menu.name,
       description: menu.description,
-      date: menu.date.toISOString().split('T')[0], // Convert Date object to string
+      date: menu.date.toISOString().split('T')[0],
       price: menu.price,
-      maxOrders: menu.maxOrders,
       active: menu.active
     });
   }
 
-  async deleteMenu(id: string) {
-    if (!id) {
-      console.error('Menu must have an id to be deleted');
-      return
-    } // Menu must have an id to be deleted
+  async deleteMenu(menu: Menu) {
+    if (!menu.id) return;
 
-    try {
-      await this.menuService.deleteMenu(id);
-      await this.loadMenus(); // Reload menus
-    } catch (error) {
-      console.error('Error deleting menu', error);
+    if (!this.menuService.canDelete(menu)) {
+      await this.showToast('No se puede eliminar un menú que ya tiene pedidos', 'warning');
+      return;
     }
-  }
 
-  // Método para confirmar eliminación
-  async confirmDelete(menu: Menu) {
     const alert = await this.alertController.create({
       header: 'Confirmar eliminación',
       message: `¿Estás seguro de eliminar el menú "${menu.name}"?`,
@@ -198,12 +157,11 @@ export class MenuManagementComponent implements OnInit {
         },
         {
           text: 'Eliminar',
-          role: 'confirm',
-          cssClass: 'danger',
           handler: async () => {
             try {
-              await this.deleteMenu(menu.id!);
+              await this.menuService.deleteMenu(menu.id!);
               await this.showToast('Menú eliminado correctamente');
+              await this.loadMenus();
             } catch (error) {
               await this.showToast('Error al eliminar el menú', 'danger');
             }
@@ -211,6 +169,17 @@ export class MenuManagementComponent implements OnInit {
         }
       ]
     });
+
     await alert.present();
+  }
+
+  private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color,
+      position: 'top'
+    });
+    await toast.present();
   }
 }

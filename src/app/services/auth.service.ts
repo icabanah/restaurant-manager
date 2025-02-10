@@ -1,10 +1,10 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
-import { Router } from '@angular/router';
+// src/app/services/auth.service.ts
+import { Injectable, inject, signal } from '@angular/core';
 import { 
   Auth, 
   signInWithEmailAndPassword,
   signOut,
-  authState 
+  User as FirebaseUser
 } from '@angular/fire/auth';
 import { 
   Firestore, 
@@ -12,8 +12,9 @@ import {
   getDoc, 
   setDoc 
 } from '@angular/fire/firestore';
+import { Router } from '@angular/router';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   name: string;
@@ -28,48 +29,62 @@ export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private router = inject(Router);
-  
+
   currentUser = signal<User | null>(null);
 
   constructor() {
     // Observar cambios en el estado de autenticación
-    authState(this.auth).subscribe(async (firebaseUser) => {
+    this.auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        // Obtener datos adicionales del usuario desde Firestore
-        const userDoc = await getDoc(doc(this.firestore, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          this.currentUser.set({
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            ...userDoc.data() as Omit<User, 'id' | 'email'>
-          });
-        }
+        await this.loadUserData(firebaseUser);
       } else {
         this.currentUser.set(null);
       }
     });
   }
 
+  private async loadUserData(firebaseUser: FirebaseUser) { // Cargar datos del usuario
+    const userDoc = await getDoc(doc(this.firestore, 'users', firebaseUser.uid));
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as Omit<User, 'id' | 'email'>;
+      this.currentUser.set({
+        id: firebaseUser.uid,
+        email: firebaseUser.email!,
+        ...userData
+      });
+    }
+  }
+
   async login(email: string, password: string): Promise<boolean> {
     try {
       const result = await signInWithEmailAndPassword(this.auth, email, password);
-      return !!result.user;
+      if (result.user) {
+        await this.loadUserData(result.user);
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Error en login:', error);
-      return false;
+      throw error;
     }
   }
 
   async logout(): Promise<void> {
     try {
       await signOut(this.auth);
-      this.router.navigate(['/login']);
+      this.currentUser.set(null);
+      await this.router.navigate(['/login']);
     } catch (error) {
       console.error('Error en logout:', error);
+      throw error;
     }
   }
 
   isAdmin(): boolean {
     return this.currentUser()?.role === 'admin';
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.currentUser();
   }
 }

@@ -1,51 +1,87 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Login</ion-title>
-  </ion-toolbar>
-</ion-header>
+<!-- pages/auth/login/login.component.html -->
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Iniciar sesión
+      </h2>
+    </div>
 
-<ion-content class="ion-padding">
-  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-    <ion-list>
-      <ion-item>
-        <ion-label position="floating">Email</ion-label>
-        <ion-input type="email" formControlName="email"></ion-input>
-      </ion-item>
-      
-      @if (loginForm.get('email')?.touched && loginForm.get('email')?.errors) {
-        @if (loginForm.get('email')?.errors?.['required']) {
-          <ion-text color="danger">
+    <form class="mt-8 space-y-6" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="rounded-md shadow-sm -space-y-px">
+        <!-- Email -->
+        <div>
+          <label for="email" class="sr-only">Email</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+            placeholder="Email"
+          />
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="sr-only">Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+            placeholder="Contraseña"
+          />
+        </div>
+      </div>
+
+      <!-- Mensajes de error para los campos -->
+      <div class="space-y-2">
+        @if (loginForm.get('email')?.errors?.['required'] && loginForm.get('email')?.touched) {
+          <div class="text-red-500 text-sm">
             El email es requerido
-          </ion-text>
+          </div>
         }
-        @if (loginForm.get('email')?.errors?.['email']) {
-          <ion-text color="danger">
+        @if (loginForm.get('email')?.errors?.['email'] && loginForm.get('email')?.touched) {
+          <div class="text-red-500 text-sm">
             El email no es válido
-          </ion-text>
+          </div>
         }
-      }
-
-      <ion-item>
-        <ion-label position="floating">Contraseña</ion-label>
-        <ion-input type="password" formControlName="password"></ion-input>
-      </ion-item>
-      
-      @if (loginForm.get('password')?.touched && loginForm.get('password')?.errors) {
-        @if (loginForm.get('password')?.errors?.['required']) {
-          <ion-text color="danger">
+        @if (loginForm.get('password')?.errors?.['required'] && loginForm.get('password')?.touched) {
+          <div class="text-red-500 text-sm">
             La contraseña es requerida
-          </ion-text>
+          </div>
         }
-        @if (loginForm.get('password')?.errors?.['minlength']) {
-          <ion-text color="danger">
+        @if (loginForm.get('password')?.errors?.['minlength'] && loginForm.get('password')?.touched) {
+          <div class="text-red-500 text-sm">
             La contraseña debe tener al menos 6 caracteres
-          </ion-text>
+          </div>
         }
-      }
-    </ion-list>
+      </div>
 
-    <ion-button expand="block" type="submit" [disabled]="!loginForm.valid">
-      Iniciar Sesión
-    </ion-button>
-  </form>
-</ion-content>
+      <!-- Botón de submit -->
+      <div>
+        <button
+          type="submit"
+          [disabled]="loginForm.invalid || isLoading"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+            <!-- Puedes agregar un ícono aquí si lo deseas -->
+          </span>
+          @if (isLoading) {
+            Iniciando sesión...
+          } @else {
+            Iniciar sesión
+          }
+        </button>
+      </div>
+
+      <!-- Mensaje de error general -->
+      @if (errorMessage) {
+        <div class="text-red-500 text-center mt-2">
+          {{ errorMessage }}
+        </div>
+      }
+    </form>
+  </div>
+</div>

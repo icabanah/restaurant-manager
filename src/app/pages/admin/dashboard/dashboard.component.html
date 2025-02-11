@@ -1,3 +1,58 @@
-<p>
-  dashboard works!
-</p>
+<!-- dashboard.component.html -->
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Dashboard</ion-title>
+    <!-- <ion-buttons slot="end">
+      <ion-button (click)="logout()">
+        <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons> -->
+  </ion-toolbar>
+ </ion-header>
+ 
+ <ion-content>
+  <div class="flex flex-col">
+    <h2 class="text-2xl font-bold mb-4">Panel de Administración</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Menús Activos</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="text-3xl font-bold">0</p>
+        </ion-card-content>
+      </ion-card>
+ 
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Órdenes Pendientes</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="text-3xl font-bold">0</p>
+        </ion-card-content>
+      </ion-card>
+ 
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Usuarios Activos</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="text-3xl font-bold">0</p>
+        </ion-card-content>
+      </ion-card>
+ 
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Total Órdenes</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="text-3xl font-bold">0</p>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+ </ion-content>

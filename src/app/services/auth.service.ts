@@ -1,5 +1,5 @@
 // src/app/services/auth.service.ts
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, NgZone, inject, signal } from '@angular/core';
 import { 
   Auth, 
   signInWithEmailAndPassword,
@@ -26,27 +26,31 @@ export interface User {
   providedIn: 'root'
 })
 export class AuthService {
+  currentUser = signal<User | null>(null);
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private router = inject(Router);
-
-  currentUser = signal<User | null>(null);
+  private ngZone = inject(NgZone);
 
   constructor() {
-    // Observar cambios en el estado de autenticación
-    this.auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        await this.loadUserData(firebaseUser);
-      } else {
-        this.currentUser.set(null);
-      }
+    this.auth.onAuthStateChanged((firebaseUser) => {
+      this.ngZone.run(async () => {
+        if (firebaseUser) {
+          await this.loadUserData(firebaseUser);
+        } else {
+          this.currentUser.set(null);
+        }
+      });
     });
   }
 
-  private async loadUserData(firebaseUser: FirebaseUser) { // Cargar datos del usuario
+  private async loadUserData(firebaseUser: FirebaseUser) {
+    console.log('Loading user data for:', firebaseUser.uid);
     const userDoc = await getDoc(doc(this.firestore, 'users', firebaseUser.uid));
+    console.log('User doc exists:', userDoc.exists());
     if (userDoc.exists()) {
       const userData = userDoc.data() as Omit<User, 'id' | 'email'>;
+      console.log('User data:', userData);
       this.currentUser.set({
         id: firebaseUser.uid,
         email: firebaseUser.email!,

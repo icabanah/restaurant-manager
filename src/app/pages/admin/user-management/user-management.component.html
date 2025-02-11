@@ -1,3 +1,125 @@
-<p>
-  user-management works!
-</p>
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Gestión de Usuarios</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadUsers()">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Formulario de usuario -->
+  <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+    <ion-list>
+      <ion-item>
+        <ion-label position="floating">Email</ion-label>
+        <ion-input formControlName="email" type="email"></ion-input>
+      </ion-item>
+      @if (userForm.get('email')?.touched && userForm.get('email')?.errors) {
+        <ion-text color="danger" class="ion-padding-start">
+          @if (userForm.get('email')?.errors?.['required']) {
+            El email es requerido
+          }
+          @if (userForm.get('email')?.errors?.['email']) {
+            El email no es válido
+          }
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label position="floating">Nombre</ion-label>
+        <ion-input formControlName="name" type="text"></ion-input>
+      </ion-item>
+      @if (userForm.get('name')?.touched && userForm.get('name')?.errors) {
+        <ion-text color="danger" class="ion-padding-start">
+          @if (userForm.get('name')?.errors?.['required']) {
+            El nombre es requerido
+          }
+          @if (userForm.get('name')?.errors?.['minlength']) {
+            El nombre debe tener al menos 3 caracteres
+          }
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label>Rol</ion-label>
+        <ion-select formControlName="role">
+          <ion-select-option value="user">Usuario</ion-select-option>
+          <ion-select-option value="admin">Administrador</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Activo</ion-label>
+        <ion-toggle formControlName="active"></ion-toggle>
+      </ion-item>
+    </ion-list>
+
+    <ion-button expand="block" type="submit" [disabled]="!userForm.valid">
+      {{ isEditing ? 'Actualizar' : 'Crear' }} Usuario
+    </ion-button>
+
+    @if (isEditing) {
+      <ion-button expand="block" fill="outline" (click)="resetForm()">
+        Cancelar Edición
+      </ion-button>
+    }
+  </form>
+
+  <!-- Buscador -->
+  <ion-searchbar 
+    placeholder="Buscar usuarios" 
+    (ionInput)="onSearchChange($event)"
+    [value]="searchTerm"
+    class="ion-margin-top">
+  </ion-searchbar>
+
+  <!-- Lista de usuarios -->
+  <ion-list class="ion-margin-top">
+    <ion-list-header>
+      <ion-label>Usuarios Registrados</ion-label>
+    </ion-list-header>
+
+    @if (isLoading) {
+      <ion-item>
+        <ion-label class="ion-text-center">
+          Cargando usuarios...
+        </ion-label>
+      </ion-item>
+    } @else if (filteredUsers.length === 0) {
+      <ion-item>
+        <ion-label class="ion-text-center">
+          No se encontraron usuarios
+        </ion-label>
+      </ion-item>
+    }
+
+    @for (user of filteredUsers; track user.id) {
+      <ion-item>
+        <ion-label>
+          <h2>{{ user.name }}</h2>
+          <p>{{ user.email }}</p>
+          <div class="ion-margin-top">
+            <ion-badge color="primary">
+              {{ user.role === 'admin' ? 'Administrador' : 'Usuario' }}
+            </ion-badge>
+            @if (user.active) {
+              <ion-badge color="success" class="ion-margin-start">Activo</ion-badge>
+            } @else {
+              <ion-badge color="medium" class="ion-margin-start">Inactivo</ion-badge>
+            }
+          </div>
+        </ion-label>
+        
+        <ion-button slot="end" fill="clear" (click)="editUser(user)">
+          <ion-icon name="create-outline"></ion-icon>
+        </ion-button>
+        <ion-button slot="end" fill="clear" color="danger" (click)="deleteUser(user)">
+          <ion-icon name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    }
+  </ion-list>
+</ion-content>

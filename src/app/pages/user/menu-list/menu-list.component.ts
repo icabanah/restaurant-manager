@@ -14,10 +14,11 @@ import {
   ToastController, 
   IonSegment
 } from '@ionic/angular/standalone';
-import { MenuService, Menu } from '../../../services/menu.service';
+import { MenuService } from '../../../services/menu.service';
 import { OrderService } from '../../../services/order.service';
 import { CommonModule } from '@angular/common';
 import { inject } from '@angular/core';
+import { Menu } from 'src/app/shared/interfaces/models';
 
 @Component({
   selector: 'app-menu-list',

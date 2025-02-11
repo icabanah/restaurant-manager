@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/db-gestor-restaurant/documents {
+    // Funciones de ayuda
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/db-gestor-restaurant/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Reglas para la colección users
+    match /users/{userId} {
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == userId || isAdmin());
+      
+      allow create: if isAdmin();
+      
+      allow update: if isAuthenticated() && 
+        (request.auth.uid == userId || isAdmin());
+      
+      allow delete: if isAdmin();
+
+      // Validación del schema de usuarios
+      function isValidUser() {
+        let user = request.resource.data;
+        return user.size() <= 8 && // name, email, role, active, lastLogin, failedLoginAttempts, locked, createdAt
+        'name' in user && user.name is string &&
+        'email' in user && user.email is string &&
+        'role' in user && (user.role == 'admin' || user.role == 'user') &&
+        'active' in user && user.active is bool &&
+        'lastLogin' in user && user.lastLogin is timestamp &&
+        'failedLoginAttempts' in user && user.failedLoginAttempts is number &&
+        'locked' in user && user.locked is bool;
+      }
+    }
+
+    // Reglas para la colección menus
+    match /menus/{menuId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+
+      function isValidMenu() {
+        let menu = request.resource.data;
+        return menu.size() <= 8 && // name, description, date, price, active, orderDeadline, status, currentOrders
+        'name' in menu && menu.name is string &&
+        'description' in menu && menu.description is string &&
+        'date' in menu && menu.date is timestamp &&
+        'price' in menu && menu.price is number &&
+        'active' in menu && menu.active is bool &&
+        'orderDeadline' in menu && menu.orderDeadline is timestamp &&
+        'status' in menu && 
+        (menu.status == 'accepting_orders' || menu.status == 'closed' || menu.status == 'confirmed') &&
+        'currentOrders' in menu && menu.currentOrders is number;
+      }
+    }
+
+    // Reglas para la colección orders
+    match /orders/{orderId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+
+      function isValidOrder() {
+        let order = request.resource.data;
+        return order.size() <= 8 && // userId, menuId, orderDate, consumptionDate, status, qrCode, isEmergency, cost
+        'userId' in order && order.userId == request.auth.uid &&
+        'menuId' in order && order.menuId is string &&
+        'orderDate' in order && order.orderDate is timestamp &&
+        'consumptionDate' in order && order.consumptionDate is timestamp &&
+        'status' in order && 
+        (order.status == 'pending' || order.status == 'completed' || 
+         order.status == 'cancelled' || order.status == 'emergency') &&
+        'qrCode' in order && order.qrCode is string &&
+        'isEmergency' in order && order.isEmergency is bool &&
+        'cost' in order && order.cost is map;
+      }
+    }
+  }
+}

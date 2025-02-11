@@ -20,11 +20,12 @@ import {
   IonListHeader
 } from '@ionic/angular/standalone';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MenuService, Menu } from '../../../services/menu.service';
+import { MenuService } from '../../../services/menu.service';
 import { CommonModule } from '@angular/common';
 import { inject } from '@angular/core';
 import { addIcons } from 'ionicons';
 import { refreshOutline, createOutline, trashOutline } from 'ionicons/icons';
+import { Menu } from 'src/app/shared/interfaces/models';
 
 @Component({
   selector: 'app-menu-management',

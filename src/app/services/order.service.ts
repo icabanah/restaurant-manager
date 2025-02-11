@@ -10,22 +10,7 @@ import {
   updateDoc 
 } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
-
-export interface Order {
-  id: string;
-  userId: string;
-  menuId: string;
-  orderDate: Date;
-  consumptionDate: Date;
-  status: 'pending' | 'completed' | 'cancelled' | 'emergency';
-  qrCode: string;
-  isEmergency: boolean;
-  cost: {
-    total: number;
-    companyShare: number;
-    employeeShare: number;
-  };
-}
+import { Order } from '../shared/interfaces/models';
 
 @Injectable({
   providedIn: 'root'

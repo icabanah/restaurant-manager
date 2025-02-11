@@ -1,58 +1,184 @@
-<!-- dashboard.component.html -->
 <ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
     <ion-title>Dashboard</ion-title>
-    <!-- <ion-buttons slot="end">
-      <ion-button (click)="logout()">
-        <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadDashboardData()">
+        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
       </ion-button>
-    </ion-buttons> -->
+    </ion-buttons>
   </ion-toolbar>
- </ion-header>
- 
- <ion-content>
-  <div class="flex flex-col">
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="p-4">
     <h2 class="text-2xl font-bold mb-4">Panel de Administración</h2>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Menús Activos -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Menús Activos</ion-card-title>
+          <ion-card-title class="flex items-center">
+            <ion-icon name="restaurant-outline" class="mr-2"></ion-icon>
+            Menús Activos
+          </ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <p class="text-3xl font-bold">0</p>
+          @if (loading) {
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+          } @else {
+            <div class="text-center">
+              <p class="text-3xl font-bold text-primary">{{ stats.activeMenus }}</p>
+              <p class="text-sm text-gray-500">menús disponibles</p>
+            </div>
+          }
         </ion-card-content>
       </ion-card>
- 
+
+      <!-- Órdenes Pendientes -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Órdenes Pendientes</ion-card-title>
+          <ion-card-title class="flex items-center">
+            <ion-icon name="list-outline" class="mr-2"></ion-icon>
+            Órdenes Pendientes
+          </ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <p class="text-3xl font-bold">0</p>
+          @if (loading) {
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+          } @else {
+            <div class="text-center">
+              <p class="text-3xl font-bold text-warning">{{ stats.pendingOrders }}</p>
+              <p class="text-sm text-gray-500">órdenes por procesar</p>
+            </div>
+          }
         </ion-card-content>
       </ion-card>
- 
+
+      <!-- Órdenes de Emergencia -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Usuarios Activos</ion-card-title>
+          <ion-card-title class="flex items-center">
+            <ion-icon name="alert-outline" class="mr-2"></ion-icon>
+            Órdenes de Emergencia
+          </ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <p class="text-3xl font-bold">0</p>
+          @if (loading) {
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+          } @else {
+            <div class="text-center">
+              <p class="text-3xl font-bold text-danger">{{ stats.emergencyOrders }}</p>
+              <p class="text-sm text-gray-500">solicitudes urgentes</p>
+            </div>
+          }
         </ion-card-content>
       </ion-card>
- 
+
+      <!-- Órdenes Completadas -->
       <ion-card>
         <ion-card-header>
-          <ion-card-title>Total Órdenes</ion-card-title>
+          <ion-card-title class="flex items-center">
+            <ion-icon name="checkmark-circle-outline" class="mr-2"></ion-icon>
+            Órdenes Completadas
+          </ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <p class="text-3xl font-bold">0</p>
+          @if (loading) {
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+          } @else {
+            <div class="text-center">
+              <p class="text-3xl font-bold text-success">{{ stats.completedOrders }}</p>
+              <p class="text-sm text-gray-500">órdenes entregadas</p>
+            </div>
+          }
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Órdenes Canceladas -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title class="flex items-center">
+            <ion-icon name="close-circle-outline" class="mr-2"></ion-icon>
+            Órdenes Canceladas
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          @if (loading) {
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+          } @else {
+            <div class="text-center">
+              <p class="text-3xl font-bold text-medium">{{ stats.cancelledOrders }}</p>
+              <p class="text-sm text-gray-500">órdenes canceladas</p>
+            </div>
+          }
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Total de Órdenes -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title class="flex items-center">
+            <ion-icon name="people-outline" class="mr-2"></ion-icon>
+            Total de Órdenes
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          @if (loading) {
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+          } @else {
+            <div class="text-center">
+              <p class="text-3xl font-bold">{{ stats.totalOrders }}</p>
+              <p class="text-sm text-gray-500">órdenes totales</p>
+            </div>
+          }
         </ion-card-content>
       </ion-card>
     </div>
+
+    <!-- Últimos Menús -->
+    <div class="mt-8">
+      <h3 class="text-xl font-semibold mb-4">Últimos Menús</h3>
+      <ion-list>
+        @if (loading) {
+          @for (item of [1,2,3]; track item) {
+            <ion-item>
+              <ion-label>
+                <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+                <ion-skeleton-text animated style="width: 30%"></ion-skeleton-text>
+              </ion-label>
+            </ion-item>
+          }
+        } @else if (latestMenus.length === 0) {
+          <ion-item>
+            <ion-label class="text-center text-gray-500">
+              No hay menús disponibles
+            </ion-label>
+          </ion-item>
+        } @else {
+          @for (menu of latestMenus; track menu.id) {
+            <ion-item>
+              <ion-label>
+                <h2>{{ menu.name }}</h2>
+                <p>{{ menu.date | date:'fullDate' }}</p>
+                <div class="flex gap-2 mt-1">
+                  <ion-badge color="primary">S/{{ menu.price }}</ion-badge>
+                  <ion-badge [color]="menu.active ? 'success' : 'medium'">
+                    {{ menu.active ? 'Activo' : 'Inactivo' }}
+                  </ion-badge>
+                  <ion-badge color="tertiary">{{ menu.currentOrders }} pedidos</ion-badge>
+                </div>
+              </ion-label>
+            </ion-item>
+          }
+        }
+      </ion-list>
+    </div>
   </div>
- </ion-content>
+</ion-content>

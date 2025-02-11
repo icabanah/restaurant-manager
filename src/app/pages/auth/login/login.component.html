@@ -1,87 +1,154 @@
-<!-- pages/auth/login/login.component.html -->
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full space-y-8">
-    <div>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-        Iniciar sesión
-      </h2>
+<!-- src/app/pages/auth/login/login.component.html -->
+<ion-content class="ion-padding">
+  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <!-- Header -->
+      <div class="text-center">
+        <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+          Iniciar sesión
+        </h2>
+        <p class="mt-2 text-sm text-gray-600">
+          O
+          <a routerLink="/auth/register" class="font-medium text-indigo-600 hover:text-indigo-500">
+            regístrate si aún no tienes cuenta
+          </a>
+        </p>
+      </div>
+
+      <!-- Formulario principal -->
+      <form class="mt-8 space-y-6" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="rounded-md shadow-sm -space-y-px">
+          <!-- Email -->
+          <div>
+            <ion-item class="rounded-t-md">
+              <ion-label position="floating">Email</ion-label>
+              <ion-input
+                formControlName="email"
+                type="email"
+                required
+                [clearInput]="true"
+              >
+                <ion-icon name="mail-outline" slot="start"></ion-icon>
+              </ion-input>
+            </ion-item>
+            @if (isEmailInvalid) {
+              <ion-text color="danger" class="text-xs px-2 mt-1">
+                {{ emailErrorMessage }}
+              </ion-text>
+            }
+          </div>
+
+          <!-- Password -->
+          <div class="mt-4">
+            <ion-item class="rounded-b-md">
+              <ion-label position="floating">Contraseña</ion-label>
+              <ion-input
+                formControlName="password"
+                [type]="showPassword ? 'text' : 'password'"
+                required
+              >
+                <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+              </ion-input>
+              <ion-button 
+                slot="end" 
+                fill="clear"
+                (click)="togglePasswordVisibility()"
+              >
+                <ion-icon [name]="showPassword ? 'eye-off' : 'eye'"></ion-icon>
+              </ion-button>
+            </ion-item>
+            @if (isPasswordInvalid) {
+              <ion-text color="danger" class="text-xs px-2 mt-1">
+                {{ passwordErrorMessage }}
+              </ion-text>
+            }
+          </div>
+        </div>
+
+        <!-- Forgot Password Link -->
+        <div class="flex items-center justify-end">
+          <div class="text-sm">
+            <a 
+              (click)="openResetPassword()" 
+              class="font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
+            >
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
+        </div>
+
+        <!-- Login Button -->
+        <div>
+          <ion-button
+            expand="block"
+            type="submit"
+            [disabled]="isFormInvalid"
+            class="w-full"
+          >
+            @if (isLoading) {
+              <ion-spinner name="crescent"></ion-spinner>
+            } @else {
+              Iniciar sesión
+            }
+          </ion-button>
+        </div>
+
+        <!-- Error Message -->
+        @if (errorMessage) {
+          <div class="rounded-md bg-red-50 p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <ion-icon 
+                  name="alert-circle"
+                  class="h-5 w-5 text-red-400"
+                  aria-hidden="true"
+                ></ion-icon>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                  {{ errorMessage }}
+                </h3>
+              </div>
+            </div>
+          </div>
+        }
+      </form>
+
+      <!-- Social Login Section -->
+      <div class="mt-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-gray-50 text-gray-500">
+              O continúa con
+            </span>
+          </div>
+        </div>
+
+        <!-- Google Login Button -->
+        <div class="mt-6">
+          <ion-button
+            expand="block"
+            fill="outline"
+            (click)="loginWithGoogle()"
+            [disabled]="isLoading"
+            class="w-full"
+          >
+            <ion-icon slot="start" name="logo-google"></ion-icon>
+            Google
+          </ion-button>
+        </div>
+      </div>
     </div>
-
-    <form class="mt-8 space-y-6" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <div class="rounded-md shadow-sm -space-y-px">
-        <!-- Email -->
-        <div>
-          <label for="email" class="sr-only">Email</label>
-          <input
-            id="email"
-            type="email"
-            formControlName="email"
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-            placeholder="Email"
-          />
-        </div>
-
-        <!-- Password -->
-        <div>
-          <label for="password" class="sr-only">Contraseña</label>
-          <input
-            id="password"
-            type="password"
-            formControlName="password"
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-            placeholder="Contraseña"
-          />
-        </div>
-      </div>
-
-      <!-- Mensajes de error para los campos -->
-      <div class="space-y-2">
-        @if (loginForm.get('email')?.errors?.['required'] && loginForm.get('email')?.touched) {
-          <div class="text-red-500 text-sm">
-            El email es requerido
-          </div>
-        }
-        @if (loginForm.get('email')?.errors?.['email'] && loginForm.get('email')?.touched) {
-          <div class="text-red-500 text-sm">
-            El email no es válido
-          </div>
-        }
-        @if (loginForm.get('password')?.errors?.['required'] && loginForm.get('password')?.touched) {
-          <div class="text-red-500 text-sm">
-            La contraseña es requerida
-          </div>
-        }
-        @if (loginForm.get('password')?.errors?.['minlength'] && loginForm.get('password')?.touched) {
-          <div class="text-red-500 text-sm">
-            La contraseña debe tener al menos 6 caracteres
-          </div>
-        }
-      </div>
-
-      <!-- Botón de submit -->
-      <div>
-        <button
-          type="submit"
-          [disabled]="loginForm.invalid || isLoading"
-          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-            <!-- Puedes agregar un ícono aquí si lo deseas -->
-          </span>
-          @if (isLoading) {
-            Iniciando sesión...
-          } @else {
-            Iniciar sesión
-          }
-        </button>
-      </div>
-
-      <!-- Mensaje de error general -->
-      @if (errorMessage) {
-        <div class="text-red-500 text-center mt-2">
-          {{ errorMessage }}
-        </div>
-      }
-    </form>
   </div>
-</div>
+
+  <!-- Reset Password Alert -->
+  <ion-alert
+    [isOpen]="showResetPassword"
+    header="Restablecer contraseña"
+    message="¿Deseas recibir un correo para restablecer tu contraseña?"
+    [buttons]="resetPasswordButtons"
+  ></ion-alert>
+</ion-content>

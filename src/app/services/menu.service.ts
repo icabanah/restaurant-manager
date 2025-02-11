@@ -11,18 +11,7 @@ import {
  updateDoc,
  deleteDoc 
 } from '@angular/fire/firestore';
-
-export interface Menu {
- id?: string;
- name: string;
- description: string;
- date: Date;
- price: number;
- active: boolean;    
- orderDeadline: Date; 
- status: 'accepting_orders' | 'closed' | 'confirmed';
- currentOrders: number;
-}
+import { Menu } from '../shared/interfaces/models';
 
 type UpdateableMenuFields = Pick<Menu, 'description' | 'orderDeadline' | 'active'>;
 

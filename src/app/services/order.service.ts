@@ -9,22 +9,30 @@ import {
   doc,
   updateDoc 
 } from '@angular/fire/firestore';
-import { AuthService } from './auth.service';
-import { Order } from '../shared/interfaces/models';
+
+export interface Order {
+  id: string;
+  menuId: string;
+  orderDate: Date;
+  consumptionDate: Date;
+  status: 'pending' | 'completed' | 'cancelled' | 'emergency';
+  qrCode: string;
+  isEmergency: boolean;
+  cost: {
+    total: number;
+    companyShare: number;
+    employeeShare: number;
+  };
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class OrderService {
   private firestore = inject(Firestore);
-  private authService = inject(AuthService);
 
   async createOrder(menuId: string, consumptionDate: Date, isEmergency = false): Promise<string> {
-    const user = this.authService.currentUser();
-    if (!user) throw new Error('Usuario no autenticado');
-
     const orderData: Omit<Order, 'id'> = {
-      userId: user.id,
       menuId,
       orderDate: new Date(),
       consumptionDate,
@@ -32,7 +40,7 @@ export class OrderService {
       qrCode: this.generateQRCode(),
       isEmergency,
       cost: {
-        total: 0, // Se calculará basado en el menú
+        total: 0,
         companyShare: 0,
         employeeShare: 0
       }
@@ -42,21 +50,15 @@ export class OrderService {
     return docRef.id;
   }
 
-  async getUserOrders(): Promise<Order[]> {
-    const user = this.authService.currentUser();
-    if (!user) throw new Error('Usuario no autenticado');
-
-    const q = query(
-      collection(this.firestore, 'orders'),
-      where('userId', '==', user.id)
-    );
-
+  async getOrders(): Promise<Order[]> {
+    const q = query(collection(this.firestore, 'orders'));
     const querySnapshot = await getDocs(q);
+    
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data() as Omit<Order, 'id'>,
-      orderDate: new Date(doc.data()['orderDate']),
-      consumptionDate: new Date(doc.data()['consumptionDate'])
+      orderDate: doc.data()['orderDate'].toDate(),
+      consumptionDate: doc.data()['consumptionDate'].toDate()
     }));
   }
 
@@ -65,12 +67,7 @@ export class OrderService {
     await updateDoc(orderRef, { status });
   }
 
-  async createEmergencyOrder(menuId: string): Promise<string> {
-    return this.createOrder(menuId, new Date(), true);
-  }
-
-  private generateQRCode(): string { // Genera un código QR único
-    const user = this.authService.currentUser();
-    return `ORDER-${user?.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  private generateQRCode(): string {
+    return `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }

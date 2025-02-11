@@ -1,0 +1,132 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Gestión de Platillos</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadDishes()">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <form [formGroup]="dishForm" (ngSubmit)="onSubmit()">
+    <ion-list>
+      <ion-item>
+        <ion-label position="floating">Nombre del Platillo</ion-label>
+        <ion-input formControlName="name" type="text"></ion-input>
+      </ion-item>
+      @if (dishForm.get('name')?.touched && dishForm.get('name')?.errors?.['required']) {
+        <ion-text color="danger" class="ion-padding-start">
+          El nombre es requerido
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label position="floating">Descripción</ion-label>
+        <ion-input formControlName="description" type="text"></ion-input>
+      </ion-item>
+      @if (dishForm.get('description')?.touched && dishForm.get('description')?.errors?.['required']) {
+        <ion-text color="danger" class="ion-padding-start">
+          La descripción es requerida
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label position="floating">Precio Base</ion-label>
+        <ion-input formControlName="price" type="number" min="0" step="0.01"></ion-input>
+      </ion-item>
+      @if (dishForm.get('price')?.touched && dishForm.get('price')?.errors) {
+        <ion-text color="danger" class="ion-padding-start">
+          El precio debe ser mayor a 0
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label>Categoría</ion-label>
+        <ion-select formControlName="category">
+          <ion-select-option value="entrada">Entrada</ion-select-option>
+          <ion-select-option value="fondo">Plato de Fondo</ion-select-option>
+          <ion-select-option value="postre">Postre</ion-select-option>
+          <ion-select-option value="bebida">Bebida</ion-select-option>
+        </ion-select>
+      </ion-item>
+    </ion-list>
+
+    <div class="ion-padding">
+      <ion-button expand="block" type="submit" [disabled]="!dishForm.valid">
+        {{ isEditing ? 'Actualizar' : 'Crear' }} Platillo
+      </ion-button>
+
+      @if (isEditing) {
+        <ion-button expand="block" fill="outline" class="ion-margin-top" (click)="resetForm()">
+          Cancelar Edición
+        </ion-button>
+      }
+    </div>
+  </form>
+
+  <ion-list-header class="ion-margin-top">
+    <ion-label>Platillos Disponibles</ion-label>
+  </ion-list-header>
+
+  @if (loading) {
+    <ion-list>
+      @for (item of [1,2,3]; track item) {
+        <ion-item>
+          <ion-label>
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+            <ion-skeleton-text animated style="width: 80%"></ion-skeleton-text>
+            <ion-skeleton-text animated style="width: 40%"></ion-skeleton-text>
+          </ion-label>
+        </ion-item>
+      }
+    </ion-list>
+  } @else if (dishes.length === 0) {
+    <ion-item>
+      <ion-label class="ion-text-center">
+        No hay platillos disponibles
+      </ion-label>
+    </ion-item>
+  } @else {
+    <ion-list>
+      @for (dish of dishes; track dish.id) {
+        <ion-item>
+          <ion-label>
+            <h2>{{ dish.name }}</h2>
+            <p>{{ dish.description }}</p>
+            <div class="ion-margin-top">
+              <ion-badge color="primary">
+                S/{{ dish.price | number:'1.2-2' }}
+              </ion-badge>
+              <ion-badge color="secondary" class="ion-margin-start">
+                {{ dish.category | titlecase }}
+              </ion-badge>
+              @if (dish.timesUsed) {
+                <ion-badge color="tertiary" class="ion-margin-start">
+                  Usado {{ dish.timesUsed }} veces
+                </ion-badge>
+              }
+            </div>
+          </ion-label>
+          
+          <ion-buttons slot="end">
+            <ion-button fill="clear" (click)="editDish(dish)">
+              <ion-icon name="create-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" color="danger" (click)="deleteDish(dish)">
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-item>
+      }
+    </ion-list>
+  }
+</ion-content>

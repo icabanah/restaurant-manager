@@ -1,0 +1,213 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>{{ isEmergencyMenu ? 'Menú de Emergencia' : 'Gestión de Menús' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadMenus()">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Formulario de Menú -->
+  <form [formGroup]="menuForm" (ngSubmit)="onSubmit()">
+    <ion-list>
+      <!-- Campos básicos -->
+      <ion-item>
+        <ion-label position="floating">Nombre del Menú</ion-label>
+        <ion-input formControlName="name" type="text"></ion-input>
+      </ion-item>
+      @if (menuForm.get('name')?.touched && menuForm.get('name')?.errors?.['required']) {
+        <ion-text color="danger" class="ion-padding-start">
+          El nombre es requerido
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label position="floating">Descripción</ion-label>
+        <ion-textarea formControlName="description" rows="3"></ion-textarea>
+      </ion-item>
+      @if (menuForm.get('description')?.touched && menuForm.get('description')?.errors?.['required']) {
+        <ion-text color="danger" class="ion-padding-start">
+          La descripción es requerida
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label position="floating">Fecha</ion-label>
+        <ion-input formControlName="date" type="date" [disabled]="isEmergencyMenu"></ion-input>
+      </ion-item>
+      @if (menuForm.get('date')?.touched && menuForm.get('date')?.errors?.['required']) {
+        <ion-text color="danger" class="ion-padding-start">
+          La fecha es requerida
+        </ion-text>
+      }
+
+      <ion-item>
+        <ion-label>Activo</ion-label>
+        <ion-toggle formControlName="active"></ion-toggle>
+      </ion-item>
+
+      <!-- Sección de Platillos -->
+      <ion-item-divider>
+        <ion-label>Platillos del Menú</ion-label>
+        <ion-button slot="end" fill="clear" (click)="openDishSelector()">
+          <ion-icon name="add-outline" slot="start"></ion-icon>
+          Añadir Platillo
+        </ion-button>
+      </ion-item-divider>
+
+      @if (selectedDishes.length === 0) {
+        <ion-item>
+          <ion-label class="ion-text-center text-gray-500">
+            No hay platillos seleccionados
+          </ion-label>
+        </ion-item>
+      }
+
+      @for (dish of selectedDishes; track dish.dish.id; let i = $index) {
+        <ion-item>
+          <ion-label>
+            <h2>{{ dish.dish.name }}</h2>
+            <p>{{ dish.dish.description }}</p>
+            <div class="ion-margin-top">
+              <ion-badge color="primary">
+                S/{{ dish.dish.price * dish.quantity | number:'1.2-2' }}
+              </ion-badge>
+              <ion-badge color="secondary" class="ion-margin-start">
+                Cantidad: {{ dish.quantity }}
+              </ion-badge>
+            </div>
+          </ion-label>
+
+          <ion-buttons slot="end">
+            <ion-button fill="clear" (click)="updateQuantity(i, -1)">
+              <ion-icon name="remove-circle-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" (click)="updateQuantity(i, 1)">
+              <ion-icon name="add-circle-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" color="danger" (click)="removeDish(i)">
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-item>
+      }
+    </ion-list>
+
+    <!-- Total y Botones de Acción -->
+    <div class="ion-padding">
+      <ion-text color="medium" class="ion-text-end">
+        <p class="text-lg">Total: S/{{ menuForm.get('price')?.value | number:'1.2-2' }}</p>
+      </ion-text>
+
+      <div class="ion-margin-vertical">
+        <ion-button expand="block" type="submit" [disabled]="!canSubmitForm()">
+          {{ isEditing ? 'Actualizar' : 'Crear' }} {{ isEmergencyMenu ? 'Menú de Emergencia' : 'Menú' }}
+        </ion-button>
+      
+        @if (isEditing) {
+          <ion-button expand="block" fill="outline" class="ion-margin-top" (click)="resetForm()">
+            Cancelar Edición
+          </ion-button>
+        }
+      </div>
+    </div>
+  </form>
+
+  <!-- Lista de Menús Existentes -->
+  <ion-list-header class="ion-margin-top">
+    <ion-label>Menús Disponibles</ion-label>
+  </ion-list-header>
+
+  @if (loading) {
+    <div class="ion-padding">
+      @for (item of [1,2,3]; track item) {
+        <ion-item>
+          <ion-label>
+            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+            <ion-skeleton-text animated style="width: 80%"></ion-skeleton-text>
+            <ion-skeleton-text animated style="width: 40%"></ion-skeleton-text>
+          </ion-label>
+        </ion-item>
+      }
+    </div>
+  } @else if (menus.length === 0) {
+    <ion-item>
+      <ion-label class="ion-text-center">
+        No hay menús disponibles
+      </ion-label>
+    </ion-item>
+  } @else {
+    @for (menu of menus; track menu.id) {
+      <ion-item>
+        <ion-label>
+          <h2>{{ menu.name }}</h2>
+          <p>{{ menu.description }}</p>
+          <p>
+            <ion-text color="medium">
+              Fecha: {{ menu.date | date:'fullDate' }}
+            </ion-text>
+          </p>
+          <div class="ion-margin-top">
+            <ion-badge color="primary">
+              Precio: S/{{ menu.price | number:'1.2-2' }}
+            </ion-badge>
+            <ion-badge color="secondary" class="ion-margin-start">
+              Pedidos: {{ menu.currentOrders }}
+            </ion-badge>
+            @if (menu.active) {
+              <ion-badge color="success" class="ion-margin-start">Activo</ion-badge>
+            } @else {
+              <ion-badge color="medium" class="ion-margin-start">Inactivo</ion-badge>
+            }
+            @if (menu.status === 'accepting_orders') {
+              <ion-badge color="tertiary" class="ion-margin-start">
+                Aceptando pedidos
+              </ion-badge>
+            } @else if (menu.status === 'closed') {
+              <ion-badge color="warning" class="ion-margin-start">
+                Cerrado
+              </ion-badge>
+            }
+          </div>
+
+          <!-- Lista de platillos del menú -->
+          <div class="ion-margin-top">
+            <p><strong>Platillos:</strong></p>
+            <ul class="ml-4">
+              @for (dish of menu.dishes; track dish.dishId) {
+                <li>
+                  {{ dish.name }} (x{{ dish.quantity }}) - S/{{ dish.price * dish.quantity | number:'1.2-2' }}
+                </li>
+              }
+            </ul>
+          </div>
+        </ion-label>
+        
+        <ion-buttons slot="end">
+          <ion-button fill="clear" [disabled]="!canFullyEdit(menu)" (click)="loadMenuForEditing(menu.id!)">
+            <ion-icon name="create-outline"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" color="danger" [disabled]="!canDelete(menu)" (click)="deleteMenu(menu)">
+            <ion-icon name="trash-outline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-item>
+    }
+  }
+</ion-content>
+
+<!-- Selector de Platillos Modal -->
+<app-dish-selector
+  [(isOpen)]="showDishSelector"
+  (dishSelected)="onDishSelected($event)">
+</app-dish-selector>

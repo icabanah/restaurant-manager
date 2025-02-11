@@ -23,10 +23,10 @@ import {
   IonSelectOption,
   IonListHeader
 } from '@ionic/angular/standalone';
-import { User } from '../../../shared/interfaces/models';
-import { UserService } from '../../../services/user.service';
 import { addIcons } from 'ionicons';
 import { createOutline, trashOutline, refreshOutline } from 'ionicons/icons';
+import { UserService } from 'src/app/services/user.service';
+import { User } from 'src/app/shared/interfaces/models';
 
 @Component({
   selector: 'app-user-management',

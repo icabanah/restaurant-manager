@@ -1,0 +1,53 @@
+<ion-modal [isOpen]="isOpen" (didDismiss)="handleDismiss()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Seleccionar Platillo</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="handleDismiss()">Cerrar</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content>
+      <ion-searchbar
+        [(ngModel)]="searchTerm"
+        (ionInput)="handleSearch($event)"
+        placeholder="Buscar platillo"
+        [debounce]="300">
+      </ion-searchbar>
+
+      <ion-list>
+        <ion-item-group>
+          <ion-item-divider>
+            <ion-label>Platillos Recientes</ion-label>
+          </ion-item-divider>
+          @for (dish of recentDishes; track dish.id) {
+            <ion-item button (click)="selectDish(dish)">
+              <ion-label>
+                <h2>{{ dish.name }}</h2>
+                <p>{{ dish.description }}</p>
+              </ion-label>
+              <ion-badge slot="end">S/{{ dish.price }}</ion-badge>
+            </ion-item>
+          }
+        </ion-item-group>
+
+        <ion-item-group>
+          <ion-item-divider>
+            <ion-label>Todos los Platillos</ion-label>
+          </ion-item-divider>
+          @for (dish of filteredDishes; track dish.id) {
+            <ion-item button (click)="selectDish(dish)">
+              <ion-label>
+                <h2>{{ dish.name }}</h2>
+                <p>{{ dish.description }}</p>
+              </ion-label>
+              <ion-badge slot="end">S/{{ dish.price }}</ion-badge>
+            </ion-item>
+          }
+        </ion-item-group>
+      </ion-list>
+    </ion-content>
+  </ng-template>
+</ion-modal>

@@ -1,3 +1,4 @@
+// dashboard.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -22,7 +23,9 @@ import {
   IonRefresherContent,
   IonSkeletonText,
   IonSpinner,
-  IonBadge
+  IonBadge,
+  AlertController,
+  ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -33,11 +36,18 @@ import {
   listOutline,
   alertOutline,
   checkmarkCircleOutline,
-  closeCircleOutline
+  closeCircleOutline,
+  refreshOutline,
+  createOutline,
+  arrowForwardOutline,
+  addCircleOutline,
+  documentTextOutline,
+  fastFoodOutline
 } from 'ionicons/icons';
 import { inject } from '@angular/core';
+import { OrderService, Order } from '../../../services/order.service';
+import { Router } from '@angular/router';
 import { MenuService } from 'src/app/services/menu.service';
-import { OrderService } from 'src/app/services/order.service';
 import { Menu } from 'src/app/shared/interfaces/models';
 
 interface DashboardStats {
@@ -82,6 +92,9 @@ interface DashboardStats {
 export class DashboardComponent implements OnInit {
   private menuService = inject(MenuService);
   private orderService = inject(OrderService);
+  private alertController = inject(AlertController);
+  private toastController = inject(ToastController);
+  private router = inject(Router);
 
   loading = true;
   stats: DashboardStats = {
@@ -103,7 +116,13 @@ export class DashboardComponent implements OnInit {
       listOutline,
       alertOutline,
       checkmarkCircleOutline,
-      closeCircleOutline
+      closeCircleOutline,
+      refreshOutline,
+      createOutline,
+      arrowForwardOutline,
+      addCircleOutline,
+      documentTextOutline,
+      fastFoodOutline
     });
   }
 
@@ -124,21 +143,62 @@ export class DashboardComponent implements OnInit {
       this.latestMenus = await this.menuService.getMenusForDate(today);
       
       // Calcular estadísticas de menús activos
-      this.stats.activeMenus = this.latestMenus.filter(menu => menu.active).length;
+      this.stats.activeMenus = this.latestMenus.filter((menu: Menu) => menu.active).length;
 
       // Obtener todas las órdenes y calcular estadísticas
-      const orders = await this.orderService.getUserOrders();
+      const orders = await this.orderService.getOrders();
       
       this.stats.totalOrders = orders.length;
-      this.stats.pendingOrders = orders.filter(order => order.status === 'pending').length;
-      this.stats.completedOrders = orders.filter(order => order.status === 'completed').length;
-      this.stats.cancelledOrders = orders.filter(order => order.status === 'cancelled').length;
-      this.stats.emergencyOrders = orders.filter(order => order.isEmergency).length;
+      this.stats.pendingOrders = orders.filter((order: Order) => order.status === 'pending').length;
+      this.stats.completedOrders = orders.filter((order: Order) => order.status === 'completed').length;
+      this.stats.cancelledOrders = orders.filter((order: Order) => order.status === 'cancelled').length;
+      this.stats.emergencyOrders = orders.filter((order: Order) => order.isEmergency).length;
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      await this.showToast('Error al cargar datos del dashboard', 'danger');
     } finally {
       this.loading = false;
     }
+  }
+
+  async createEmergencyMenu() {
+    const alert = await this.alertController.create({
+      header: 'Crear Menú de Emergencia',
+      message: '¿Deseas crear un nuevo menú de emergencia para hoy?',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Crear',
+          handler: () => {
+            this.router.navigate(['/admin/menus/management'], { 
+              queryParams: { emergency: true } 
+            });
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  editMenu(menu: Menu) {
+    if (!menu.id) return;
+    this.router.navigate(['/menus/management'], { 
+      queryParams: { menuId: menu.id } 
+    });
+  }
+
+  private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color,
+      position: 'top'
+    });
+    await toast.present();
   }
 }

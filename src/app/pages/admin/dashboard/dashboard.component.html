@@ -1,3 +1,4 @@
+<!-- dashboard.component.html -->
 <ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
@@ -18,11 +19,38 @@
   </ion-refresher>
 
   <div class="p-4">
+    <!-- Quick Actions -->
+    <div class="mb-6">
+      <h3 class="text-xl font-semibold mb-4">Acciones Rápidas</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <ion-button expand="block" color="primary" routerLink="/admin/menus">
+          <ion-icon slot="start" name="restaurant-outline"></ion-icon>
+          Gestionar Menús
+        </ion-button>
+        <ion-button expand="block" color="warning" routerLink="/admin/dishes">
+          <ion-icon slot="start" name="fast-food-outline"></ion-icon>
+          Gestionar platillos
+        </ion-button>
+        <ion-button expand="block" color="secondary" routerLink="/admin/orders">
+          <ion-icon slot="start" name="list-outline"></ion-icon>
+          Gestionar pedidos
+        </ion-button>
+        <ion-button expand="block" color="tertiary" routerLink="/admin/users">
+          <ion-icon slot="start" name="people-outline"></ion-icon>
+          Gestionar usuarios
+        </ion-button>
+        <!-- <ion-button expand="block" color="success" (click)="createEmergencyMenu()">
+          <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+          Menú Emergencia
+        </ion-button> -->
+      </div>
+    </div>
+
     <h2 class="text-2xl font-bold mb-4">Panel de Administración</h2>
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Menús Activos -->
-      <ion-card>
+      <!-- Menus activos -->
+      <ion-card class="cursor-pointer" routerLink="/menus/management">
         <ion-card-header>
           <ion-card-title class="flex items-center">
             <ion-icon name="restaurant-outline" class="mr-2"></ion-icon>
@@ -41,8 +69,8 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Órdenes Pendientes -->
-      <ion-card>
+      <!-- Órdenes pendientes -->
+      <ion-card class="cursor-pointer" routerLink="/orders/pending">
         <ion-card-header>
           <ion-card-title class="flex items-center">
             <ion-icon name="list-outline" class="mr-2"></ion-icon>
@@ -61,12 +89,12 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Órdenes de Emergencia -->
-      <ion-card>
+      <!-- Total Orders Card -->
+      <ion-card class="cursor-pointer" routerLink="/admin/orders">
         <ion-card-header>
           <ion-card-title class="flex items-center">
-            <ion-icon name="alert-outline" class="mr-2"></ion-icon>
-            Órdenes de Emergencia
+            <ion-icon name="document-text-outline" class="mr-2"></ion-icon>
+            Total de Órdenes
           </ion-card-title>
         </ion-card-header>
         <ion-card-content>
@@ -74,15 +102,15 @@
             <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
           } @else {
             <div class="text-center">
-              <p class="text-3xl font-bold text-danger">{{ stats.emergencyOrders }}</p>
-              <p class="text-sm text-gray-500">solicitudes urgentes</p>
+              <p class="text-3xl font-bold text-tertiary">{{ stats.totalOrders }}</p>
+              <p class="text-sm text-gray-500">órdenes totales</p>
             </div>
           }
         </ion-card-content>
       </ion-card>
 
-      <!-- Órdenes Completadas -->
-      <ion-card>
+      <!-- Completed Orders Card -->
+      <ion-card class="cursor-pointer" routerLink="/admin/orders">
         <ion-card-header>
           <ion-card-title class="flex items-center">
             <ion-icon name="checkmark-circle-outline" class="mr-2"></ion-icon>
@@ -101,50 +129,18 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Órdenes Canceladas -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title class="flex items-center">
-            <ion-icon name="close-circle-outline" class="mr-2"></ion-icon>
-            Órdenes Canceladas
-          </ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          @if (loading) {
-            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
-          } @else {
-            <div class="text-center">
-              <p class="text-3xl font-bold text-medium">{{ stats.cancelledOrders }}</p>
-              <p class="text-sm text-gray-500">órdenes canceladas</p>
-            </div>
-          }
-        </ion-card-content>
-      </ion-card>
-
-      <!-- Total de Órdenes -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title class="flex items-center">
-            <ion-icon name="people-outline" class="mr-2"></ion-icon>
-            Total de Órdenes
-          </ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          @if (loading) {
-            <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
-          } @else {
-            <div class="text-center">
-              <p class="text-3xl font-bold">{{ stats.totalOrders }}</p>
-              <p class="text-sm text-gray-500">órdenes totales</p>
-            </div>
-          }
-        </ion-card-content>
-      </ion-card>
     </div>
 
-    <!-- Últimos Menús -->
+    <!-- Latest Menus with Actions -->
     <div class="mt-8">
-      <h3 class="text-xl font-semibold mb-4">Últimos Menús</h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold">Últimos Menús</h3>
+        <ion-button size="small" fill="clear" routerLink="/menus">
+          Ver todos
+          <ion-icon slot="end" name="arrow-forward-outline"></ion-icon>
+        </ion-button>
+      </div>
+      
       <ion-list>
         @if (loading) {
           @for (item of [1,2,3]; track item) {
@@ -175,10 +171,36 @@
                   <ion-badge color="tertiary">{{ menu.currentOrders }} pedidos</ion-badge>
                 </div>
               </ion-label>
+              <ion-button slot="end" fill="clear" (click)="editMenu(menu)">
+                <ion-icon name="create-outline"></ion-icon>
+              </ion-button>
             </ion-item>
           }
         }
       </ion-list>
     </div>
+
+    <!-- Emergency Orders Section -->
+    @if (stats.emergencyOrders > 0) {
+      <div class="mt-8">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-danger">Pedidos de Emergencia</h3>
+          <ion-button size="small" color="danger" routerLink="/admin/orders/emergency">
+            Ver Emergencias
+            <ion-icon slot="end" name="alert-outline"></ion-icon>
+          </ion-button>
+        </div>
+        <ion-card color="danger">
+          <ion-card-content>
+            <div class="text-center text-white">
+              <p class="text-lg">¡Atención! Hay {{ stats.emergencyOrders }} pedidos de emergencia pendientes</p>
+              <ion-button fill="outline" color="light" class="mt-2" routerLink="/orders/emergency">
+                Atender Ahora
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+    }
   </div>
 </ion-content>

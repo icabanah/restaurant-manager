@@ -83,4 +83,23 @@ export class DateService {
 
     return deadline;
   }
+
+  isBeforeDeadline(date: Date, deadline: Date): boolean {
+    return date <= deadline;
+  }
+
+  formatDisplayDate(date: Date): string {
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  getDaysBetween(date1: Date, date2: Date): number {
+    const diff = Math.abs(date2.getTime() - date1.getTime());
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  }
 }

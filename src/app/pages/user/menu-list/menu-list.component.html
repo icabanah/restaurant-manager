@@ -21,12 +21,12 @@
           <p>{{ menu.description }}</p>
           <p>
             <ion-text color="medium">
-              Fecha: {{ menu.date | date:'fullDate':'UTC':'es' }}
+              Fecha: {{ menu.date | date:'EEEE, d MMMM y':'UTC':'es' }}
             </ion-text>
           </p>
           <div class="ion-margin-top">
             <ion-badge color="primary">
-              Precio: S/{{ menu.price | number:'1.2-2' }}
+              S/{{ menu.price | number:'1.2-2' }}
             </ion-badge>
             @if (menu.status === 'accepting_orders') {
               <ion-badge color="success" class="ion-margin-start">

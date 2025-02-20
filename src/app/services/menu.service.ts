@@ -26,8 +26,18 @@ export class MenuService {
       ...menu,
       currentOrders: 0,
       status: 'accepting_orders',
+      // Utilizamos DateService para calcular la fecha límite
+      orderDeadline: this.dateService.calculateOrderDeadline(menu.date),
+      // Convertimos la fecha del menú a UTC
       date: this.dateService.toUTCDate(menu.date),
-      orderDeadline: this.dateService.calculateOrderDeadline(menu.date)
+      dishes: menu.dishes.map(dish => ({
+        dishId: dish.dishId,
+        name: dish.name,
+        description: dish.description,
+        price: dish.price,
+        quantity: dish.quantity,
+        category: dish.category
+      }))
     };
 
     const docRef = await addDoc(collection(this.firestore, 'menus'), menuData);
@@ -36,6 +46,7 @@ export class MenuService {
 
   async getMenusForDate(date: Date): Promise<Menu[]> {
     try {
+      // Utilizamos el DateService para obtener el inicio y fin del día
       const startOfDay = this.dateService.getStartOfDay(date);
       const endOfDay = this.dateService.getEndOfDay(date);
 
@@ -47,12 +58,31 @@ export class MenuService {
       );
 
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data() as Omit<Menu, 'id'>,
-        date: this.dateService.fromFirestore(doc.data()['date']),
-        orderDeadline: this.dateService.fromFirestore(doc.data()['orderDeadline'])
-      }));
+      const menus = querySnapshot.docs.map(doc => {
+        // Utilizamos el DateService para convertir las fechas de Firestore
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data as Omit<Menu, 'id' | 'date' | 'orderDeadline'>,
+          date: this.dateService.fromFirestore(data['date']),
+          orderDeadline: this.dateService.fromFirestore(data['orderDeadline'])
+        };
+      });
+
+      // Actualizamos el estado basándonos en la fecha límite
+      const now = new Date();
+      menus.forEach(menu => {
+        if (now > menu.orderDeadline) {
+          menu.status = 'closed';
+        }
+      });
+
+      // Ordenamiento de menús
+      return menus.sort((a, b) => {
+        if (a.status === 'accepting_orders' && b.status !== 'accepting_orders') return -1;
+        if (a.status !== 'accepting_orders' && b.status === 'accepting_orders') return 1;
+        return a.date.getTime() - b.date.getTime();
+      });
     } catch (error) {
       console.error('Error en getMenusForDate:', error);
       throw error;
@@ -95,7 +125,7 @@ export class MenuService {
     const now = new Date();
     return menu.active &&
       menu.status === 'accepting_orders' &&
-      now < menu.orderDeadline;
+      now <= menu.orderDeadline;
   }
 
   canFullyEdit(menu: Menu): boolean {

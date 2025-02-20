@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
+import {
+  IonHeader,
+  IonToolbar,
+  IonTitle,
   IonContent,
   IonList,
   IonItem,
@@ -11,7 +11,7 @@ import {
   IonBadge,
   IonText,
   AlertController,
-  ToastController, 
+  ToastController,
   IonSegment
 } from '@ionic/angular/standalone';
 import { MenuService } from '../../../services/menu.service';
@@ -20,6 +20,7 @@ import { CommonModule } from '@angular/common';
 import { inject } from '@angular/core';
 import { Menu } from 'src/app/shared/interfaces/models';
 import { AuthService } from 'src/app/services/auth.service';
+import { DateService } from 'src/app/services/date.service';
 
 @Component({
   selector: 'app-menu-list',
@@ -36,13 +37,14 @@ import { AuthService } from 'src/app/services/auth.service';
     IonLabel,
     IonButton,
     IonBadge,
-    IonText, 
+    IonText,
     IonSegment
   ]
 })
 export class MenuListComponent implements OnInit {
   private menuService = inject(MenuService);
   private orderService = inject(OrderService);
+  private dateService = inject(DateService);
   private alertController = inject(AlertController);
   private toastController = inject(ToastController);
   private authService = inject(AuthService);
@@ -55,9 +57,12 @@ export class MenuListComponent implements OnInit {
 
   async loadMenus() {
     try {
+      // Obtenemos la fecha de mañana y la convertimos a UTC
       const tomorrow = new Date();
-      // tomorrow.setDate(tomorrow.getDate() + 1);
-      this.menus = await this.menuService.getMenusForDate(tomorrow);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowUTC = this.dateService.toUTCDate(tomorrow);
+
+      this.menus = await this.menuService.getMenusForDate(tomorrowUTC);
     } catch (error) {
       await this.showToast('Error al cargar menús', 'danger');
     }
@@ -65,9 +70,9 @@ export class MenuListComponent implements OnInit {
 
   canOrder(menu: Menu): boolean {
     const now = new Date();
-    return menu.active && 
-           menu.status === 'accepting_orders' && 
-           now < menu.orderDeadline;
+    return menu.active &&
+      menu.status === 'accepting_orders' &&
+      now < menu.orderDeadline;
   }
 
   async orderMenu(menu: Menu) {
@@ -101,12 +106,12 @@ export class MenuListComponent implements OnInit {
               try {
                 // Crear la orden con el ID del usuario
                 await this.orderService.createOrder(
-                  menu.id!, 
+                  menu.id!,
                   menu.date, // Usar la fecha del menú
                   false, // No es orden de emergencia
                   currentUser.id // Añadir el ID del usuario
                 );
-                
+
                 await this.showToast('Pedido realizado con éxito');
                 await this.loadMenus();
               } catch (error: any) {

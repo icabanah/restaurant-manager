@@ -2,57 +2,69 @@
   <ion-toolbar>
     <ion-title>Menú del Día</ion-title>
   </ion-toolbar>
- </ion-header>
- 
- <ion-content class="ion-padding">
+</ion-header>
+
+<ion-content class="ion-padding">
   <ion-list>
     @if (menus.length === 0) {
-      <ion-item>
-        <ion-label class="ion-text-center">
-          No hay menús disponibles para hoy
-        </ion-label>
-      </ion-item>
+    <ion-item>
+      <ion-label class="ion-text-center">
+        No hay menús disponibles para hoy
+      </ion-label>
+    </ion-item>
     }
- 
+
     @for (menu of menus; track menu.id) {
-      <ion-item>
-        <ion-label>
-          <h2>{{ menu.name }}</h2>
-          <p>{{ menu.description }}</p>
-          <p>
-            <ion-text color="medium">
-              Fecha: {{ menu.date | date:'EEEE, d MMMM y':'UTC':'es' }}
-            </ion-text>
-          </p>
-          <div class="ion-margin-top">
-            <ion-badge color="primary">
-              S/{{ menu.price | number:'1.2-2' }}
-            </ion-badge>
-            @if (menu.status === 'accepting_orders') {
-              <ion-badge color="success" class="ion-margin-start">
-                Aceptando pedidos
-              </ion-badge>
-              <ion-text color="medium" class="ion-margin-start">
-                <p>Pedidos hasta 23:59 del {{ menu.orderDeadline | date:'dd/MM/yy' }}</p>
+    <ion-item>
+      <ion-label>
+        <h2>{{ menu.name }}</h2>
+        <p>{{ menu.description }}</p>
+        <p>
+          <ion-text color="medium">
+            Fecha: {{ menu.date | date:'EEEE, d MMMM y':'UTC':'es' }}
+          </ion-text>
+        </p>
+        <div class="ion-margin-top">
+          <ion-badge color="primary">
+            S/{{ menu.price | number:'1.2-2' }}
+          </ion-badge>
+          @if (menu.status === 'accepting_orders') {
+          <ion-badge color="success" class="ion-margin-start">
+            Aceptando pedidos
+          </ion-badge>
+          <ion-text color="medium" class="ion-margin-start">
+            <p>Pedidos hasta 23:59 del {{ menu.orderDeadline | date:'dd/MM/yy' }}</p>
+          </ion-text>
+          } @else if (menu.status === 'closed') {
+          <ion-badge color="warning" class="ion-margin-start">
+            Pedidos cerrados
+          </ion-badge>
+          } @else {
+          <ion-badge color="medium" class="ion-margin-start">
+            Confirmado
+          </ion-badge>
+          }
+        </div>
+
+        <div class="ion-margin-top">
+          <p><strong>Platillos disponibles:</strong></p>
+          <ion-list>
+            @for (dish of menu.dishes; track dish.dishId) {
+            <ion-item lines="none">
+              <ion-text>
+                {{ dish.name }} - {{ dish.category | titlecase }}
+                <span class="ion-margin-start">S/{{ dish.price }}</span>
               </ion-text>
-            } @else if (menu.status === 'closed') {
-              <ion-badge color="warning" class="ion-margin-start">
-                Pedidos cerrados
-              </ion-badge>
-            } @else {
-              <ion-badge color="medium" class="ion-margin-start">
-                Confirmado
-              </ion-badge>
+            </ion-item>
             }
-          </div>
-        </ion-label>
-        
-        <ion-button slot="end" 
-                    [disabled]="!canOrder(menu)"
-                    (click)="orderMenu(menu)">
-          {{ menu.status === 'accepting_orders' ? 'Ordenar' : 'Cerrado' }}
-        </ion-button>
-      </ion-item>
+          </ion-list>
+        </div>
+      </ion-label>
+
+      <ion-button slot="end" [disabled]="!canOrder(menu)" (click)="orderMenu(menu)">
+        {{ menu.status === 'accepting_orders' ? 'Ordenar' : 'Cerrado' }}
+      </ion-button>
+    </ion-item>
     }
   </ion-list>
- </ion-content>
+</ion-content>

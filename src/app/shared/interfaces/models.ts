@@ -46,6 +46,7 @@ export interface Order {
   status: 'pending' | 'completed' | 'cancelled' | 'emergency';
   qrCode: string;
   isEmergency: boolean;
+  selectedDishes: MenuDish[];
   cost: {
     total: number;
     companyShare: number;

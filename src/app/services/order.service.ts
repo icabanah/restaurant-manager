@@ -15,9 +15,8 @@ import {
 } from '@angular/fire/firestore';
 import { MenuService } from './menu.service';
 import { MenuPriceService } from './menu-price.service';
-import { Order, Menu } from '../shared/interfaces/models';
+import { Order, Menu, MenuDish } from '../shared/interfaces/models';
 import { AuthService } from './auth.service';
-import { DateService } from './date.service';
 
 @Injectable({
   providedIn: 'root'
@@ -27,51 +26,76 @@ export class OrderService {
   private menuService = inject(MenuService);
   private menuPriceService = inject(MenuPriceService);
   private authService = inject(AuthService);
-  private dateService = inject(DateService);
 
-  async createOrder(menuId: string, consumptionDate: Date, isEmergency = false, userId: string): Promise<string> {
+  /*
+   * Crea una nueva orden en el sistema
+   * @param menuId ID del menú seleccionado
+   * @param consumptionDate Fecha en que se consumirá el pedido
+   * @param selectedDishes Platillos seleccionados por el usuario
+   * @param total Precio total calculado
+   * @param isEmergency Indica si es un pedido de emergencia
+   * @param userId ID del usuario que realiza el pedido
+   */
+
+  async createOrder(
+    menuId: string,
+    consumptionDate: Date,
+    selectedDishes: MenuDish[],
+    total: number,
+    isEmergency = false,
+    userId: string
+  ): Promise<string> {
     try {
+      // Verificar autenticación del usuario
       const currentUser = this.authService.currentUser();
       if (!currentUser) {
         throw new Error('Usuario no autenticado');
       }
 
+      // Obtener y validar el menú
       const menu = await this.getMenuById(menuId);
       if (!menu) {
         throw new Error('Menú no encontrado');
       }
 
-      // Validar que el usuario no tenga ya una orden para este menú
+      // Validar que el usuario no tenga una orden existente para este menú
       const existingOrder = await this.getUserOrderForMenu(userId, menuId);
       if (existingOrder) {
         throw new Error('Ya tienes un pedido para este menú');
       }
 
+      // Validar que el menú está aceptando pedidos (excepto para emergencias)
       if (!isEmergency && !this.menuService.canAcceptOrders(menu)) {
         throw new Error('Este menú no está aceptando pedidos');
       }
 
-      const totalCost = this.menuPriceService.calculateMenuPrice(menu.dishes);
-      const companyShare = totalCost * 0.7;
-      const employeeShare = totalCost * 0.3;
+      // Validar la composición del pedido
+      const orderValidation = this.menuPriceService.validateMenuComposition(selectedDishes);
+      if (!orderValidation.isValid) {
+        throw new Error(orderValidation.message);
+      }
 
+      // Crear el objeto de la orden
       const orderData: Omit<Order, 'id'> = {
         userId: currentUser.id,
         menuId,
-        orderDate: this.dateService.toUTCDate(new Date()),
-        consumptionDate: this.dateService.toUTCDate(consumptionDate),
+        orderDate: new Date(),
+        consumptionDate,
         status: isEmergency ? 'emergency' : 'pending',
         qrCode: this.generateQRCode(),
         isEmergency,
+        selectedDishes, // Platillos específicos seleccionados
         cost: {
-          total: totalCost,
-          companyShare,
-          employeeShare
+          total,
+          companyShare: total * 0.7, // 70% asumido por la empresa
+          employeeShare: total * 0.3  // 30% pagado por el empleado
         }
       };
 
+      // Crear la orden en Firestore
       const docRef = await addDoc(collection(this.firestore, 'orders'), orderData);
 
+      // Actualizar el contador de órdenes en el menú
       await this.menuService.updateMenu(menuId, {
         currentOrders: menu.currentOrders + 1
       });
@@ -83,6 +107,9 @@ export class OrderService {
     }
   }
 
+  /**
+   * Obtiene todas las órdenes del sistema
+   */
   async getOrders(): Promise<Order[]> {
     try {
       const q = query(
@@ -98,6 +125,9 @@ export class OrderService {
     }
   }
 
+  /**
+   * Obtiene las órdenes de un usuario específico
+   */
   async getUserOrders(userId: string): Promise<Order[]> {
     try {
       const q = query(
@@ -114,7 +144,9 @@ export class OrderService {
     }
   }
 
-  // Método auxiliar para verificar órdenes existentes
+  /**
+   * Verifica si un usuario ya tiene una orden para un menú específico
+   */
   private async getUserOrderForMenu(userId: string, menuId: string): Promise<Order | null> {
     const q = query(
       collection(this.firestore, 'orders'),
@@ -122,15 +154,15 @@ export class OrderService {
       where('menuId', '==', menuId)
     );
 
-    const snapshot = await getDocs(q); // Obtenemos los documentos
+    const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
 
-    return { // Mapeamos el primer documento
-      id: snapshot.docs[0].id,
-      ...snapshot.docs[0].data() as Omit<Order, 'id'>
-    };
+    return this.mapOrderDocument(snapshot.docs[0].id, snapshot.docs[0].data());
   }
 
+  /**
+   * Obtiene las órdenes pendientes
+   */
   async getPendingOrders(): Promise<Order[]> {
     try {
       const q = query(
@@ -147,6 +179,9 @@ export class OrderService {
     }
   }
 
+  /**
+   * Obtiene las órdenes de emergencia
+   */
   async getEmergencyOrders(): Promise<Order[]> {
     try {
       const q = query(
@@ -164,6 +199,9 @@ export class OrderService {
     }
   }
 
+  /**
+   * Actualiza el estado de una orden
+   */
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     try {
       const orderRef = doc(this.firestore, 'orders', orderId);
@@ -177,6 +215,9 @@ export class OrderService {
     }
   }
 
+  /**
+   * Cancela una orden y actualiza el contador del menú
+   */
   async cancelOrder(orderId: string): Promise<void> {
     try {
       const orderRef = doc(this.firestore, 'orders', orderId);
@@ -191,7 +232,7 @@ export class OrderService {
 
       if (menu) {
         await this.menuService.updateMenu(menu.id!, {
-          currentOrders: Math.max(0, menu.currentOrders - 1) // En español: máximo entre 0 y (menos 1) para evitar números negativos
+          currentOrders: Math.max(0, menu.currentOrders - 1)
         });
       }
 
@@ -206,20 +247,23 @@ export class OrderService {
     }
   }
 
+  /**
+   * Obtiene un menú por su ID
+   */
   private async getMenuById(menuId: string): Promise<Menu | null> {
     try {
       const menuRef = doc(this.firestore, 'menus', menuId);
       const menuDoc = await getDoc(menuRef);
 
-      if (!menuDoc.exists()) { // Si el documento no existe
+      if (!menuDoc.exists()) {
         return null;
       }
 
-      const data = menuDoc.data(); // Obtenemos los datos del documento
+      const data = menuDoc.data();
 
       return {
         id: menuDoc.id,
-        name: data['name'], // Accedemos a la propiedad 'name' de los datos
+        name: data['name'],
         description: data['description'],
         date: data['date'].toDate(),
         price: data['price'],
@@ -227,7 +271,7 @@ export class OrderService {
         orderDeadline: data['orderDeadline'].toDate(),
         status: data['status'],
         currentOrders: data['currentOrders'],
-        dishes: data['dishes'].map((dish: any) => ({ // Mapeamos los platos
+        dishes: data['dishes'].map((dish: any) => ({
           dishId: dish.dishId,
           name: dish.name,
           description: dish.description,
@@ -242,20 +286,27 @@ export class OrderService {
     }
   }
 
+  /**
+   * Mapea un documento de Firestore a un objeto Order
+   */
   private mapOrderDocument(id: string, data: DocumentData): Order {
     return {
       id,
       userId: data['userId'],
       menuId: data['menuId'],
-      orderDate: this.dateService.fromFirestore(data['orderDate']),
-      consumptionDate: this.dateService.fromFirestore(data['consumptionDate']),
+      orderDate: data['orderDate'].toDate(),
+      consumptionDate: data['consumptionDate'].toDate(),
       status: data['status'],
       qrCode: data['qrCode'],
       isEmergency: data['isEmergency'],
+      selectedDishes: data['selectedDishes'] || [], // Manejo de compatibilidad con órdenes antiguas
       cost: data['cost']
     };
   }
 
+  /**
+   * Genera un código QR único para la orden
+   */
   private generateQRCode(): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 15);

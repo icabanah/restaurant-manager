@@ -1,0 +1,99 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Realizar Pedido</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">Cerrar</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="orderForm" (ngSubmit)="confirmOrder()">
+    <!-- Sección Entradas -->
+    <ion-item-group>
+      <ion-item-divider>
+        <ion-label>Entradas</ion-label>
+      </ion-item-divider>
+      <ion-radio-group formControlName="starter">
+        @for (dish of getDishesByCategory('entrada'); track dish.dishId) {
+          <ion-item>
+            <ion-label>{{ dish.name }}</ion-label>
+            <ion-radio [value]="dish.dishId"></ion-radio>
+          </ion-item>
+        }
+        <ion-item>
+          <ion-label>Sin entrada</ion-label>
+          <ion-radio value="none"></ion-radio>
+        </ion-item>
+      </ion-radio-group>
+    </ion-item-group>
+
+    <!-- Sección Platos de Fondo -->
+    <ion-item-group>
+      <ion-item-divider>
+        <ion-label>Plato Principal</ion-label>
+      </ion-item-divider>
+      <ion-radio-group formControlName="mainCourse">
+        @for (dish of getDishesByCategory('fondo'); track dish.dishId) {
+          <ion-item>
+            <ion-label>{{ dish.name }}</ion-label>
+            <ion-radio [value]="dish.dishId"></ion-radio>
+          </ion-item>
+        }
+        <ion-item>
+          <ion-label>Sin plato principal</ion-label>
+          <ion-radio value="none"></ion-radio>
+        </ion-item>
+      </ion-radio-group>
+    </ion-item-group>
+
+    <!-- Sección Bebidas (obligatorio) -->
+    <ion-item-group>
+      <ion-item-divider>
+        <ion-label>Bebida (obligatorio)</ion-label>
+      </ion-item-divider>
+      <ion-radio-group formControlName="beverage" required>
+        @for (dish of getDishesByCategory('bebida'); track dish.dishId) {
+          <ion-item>
+            <ion-label>{{ dish.name }}</ion-label>
+            <ion-radio [value]="dish.dishId"></ion-radio>
+          </ion-item>
+        }
+      </ion-radio-group>
+    </ion-item-group>
+
+    <!-- Sección Postres (opcional) -->
+    @if (hasDeserts()) {
+      <ion-item-group>
+        <ion-item-divider>
+          <ion-label>Postre (opcional)</ion-label>
+        </ion-item-divider>
+        <ion-radio-group formControlName="dessert">
+          @for (dish of getDishesByCategory('postre'); track dish.dishId) {
+            <ion-item>
+              <ion-label>{{ dish.name }}</ion-label>
+              <ion-radio [value]="dish.dishId"></ion-radio>
+            </ion-item>
+          }
+          <ion-item>
+            <ion-label>Sin postre</ion-label>
+            <ion-radio value="none"></ion-radio>
+          </ion-item>
+        </ion-radio-group>
+      </ion-item-group>
+    }
+
+    <!-- Precio Total -->
+    <div class="ion-padding">
+      <ion-text color="primary">
+        <h2>Total: S/{{ calculateTotal() }}</h2>
+      </ion-text>
+    </div>
+
+    <ion-button expand="block" 
+                (click)="confirmOrder()"
+                [disabled]="!isValidOrder()">
+      Confirmar Pedido
+    </ion-button>
+  </form>
+</ion-content>

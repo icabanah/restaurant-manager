@@ -162,7 +162,7 @@
             <ion-item>
               <ion-label>
                 <h2>{{ menu.name }}</h2>
-                <p>{{ menu.date | date:'fullDate' }}</p>
+                <p>{{ menu.date | date:'fullDate': 'UTC' }}</p>
                 <div class="flex gap-2 mt-1">
                   <ion-badge color="primary">S/{{ menu.price }}</ion-badge>
                   <ion-badge [color]="menu.active ? 'success' : 'medium'">

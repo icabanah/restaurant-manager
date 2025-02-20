@@ -45,10 +45,10 @@ import {
   fastFoodOutline
 } from 'ionicons/icons';
 import { inject } from '@angular/core';
-import { OrderService, Order } from '../../../services/order.service';
+import { OrderService } from 'src/app/services/order.service';
 import { Router } from '@angular/router';
 import { MenuService } from 'src/app/services/menu.service';
-import { Menu } from 'src/app/shared/interfaces/models';
+import { Menu, Order } from 'src/app/shared/interfaces/models';
 
 interface DashboardStats {
   activeMenus: number;

@@ -1,43 +1,34 @@
 import { Injectable, inject } from '@angular/core';
-import { 
-  Firestore, 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
+import {
+  Firestore,
+  collection,
+  addDoc,
+  query,
+  where,
   getDocs,
   doc,
   getDoc,
   updateDoc,
-  deleteDoc 
+  deleteDoc
 } from '@angular/fire/firestore';
 import { Menu, MenuDish } from '../shared/interfaces/models';
+import { DateService } from './date.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MenuService {
   private firestore = inject(Firestore);
+  private dateService = inject(DateService);
 
   async createMenu(menu: Omit<Menu, 'id' | 'currentOrders' | 'status'>): Promise<string> {
     const menuData = {
       ...menu,
       currentOrders: 0,
       status: 'accepting_orders',
-      orderDeadline: new Date(menu.date),
-      // Asegurarse de que los platillos tengan la estructura correcta
-      dishes: menu.dishes.map(dish => ({
-        dishId: dish.dishId,
-        name: dish.name,
-        description: dish.description,
-        price: dish.price,
-        quantity: dish.quantity,
-        category: dish.category
-      }))
+      date: this.dateService.toUTCDate(menu.date),
+      orderDeadline: this.dateService.calculateOrderDeadline(menu.date)
     };
-    
-    menuData.orderDeadline.setDate(menuData.orderDeadline.getDate() - 1);
-    menuData.orderDeadline.setHours(17, 0, 0, 0);
 
     const docRef = await addDoc(collection(this.firestore, 'menus'), menuData);
     return docRef.id;
@@ -45,11 +36,8 @@ export class MenuService {
 
   async getMenusForDate(date: Date): Promise<Menu[]> {
     try {
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+      const startOfDay = this.dateService.getStartOfDay(date);
+      const endOfDay = this.dateService.getEndOfDay(date);
 
       const menuCollection = collection(this.firestore, 'menus');
       const q = query(
@@ -62,8 +50,8 @@ export class MenuService {
       return querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data() as Omit<Menu, 'id'>,
-        date: doc.data()['date'].toDate(),
-        orderDeadline: doc.data()['orderDeadline'].toDate()
+        date: this.dateService.fromFirestore(doc.data()['date']),
+        orderDeadline: this.dateService.fromFirestore(doc.data()['orderDeadline'])
       }));
     } catch (error) {
       console.error('Error en getMenusForDate:', error);
@@ -74,7 +62,7 @@ export class MenuService {
   async updateMenu(id: string, updates: Partial<Menu>): Promise<void> {
     const menuRef = doc(this.firestore, 'menus', id);
     const updateData = { ...updates };
-    
+
     // Si se están actualizando los platillos, asegurarse de que tengan la estructura correcta
     if (updates.dishes) {
       updateData.dishes = updates.dishes.map(dish => ({
@@ -105,9 +93,9 @@ export class MenuService {
 
   canAcceptOrders(menu: Menu): boolean {
     const now = new Date();
-    return menu.active && 
-           menu.status === 'accepting_orders' && 
-           now < menu.orderDeadline;
+    return menu.active &&
+      menu.status === 'accepting_orders' &&
+      now < menu.orderDeadline;
   }
 
   canFullyEdit(menu: Menu): boolean {

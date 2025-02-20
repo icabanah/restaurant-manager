@@ -42,6 +42,7 @@ import { DishSelectorComponent } from '../../dish/dish-selector/dish-selector.co
 import { MenuService } from 'src/app/services/menu.service';
 import { DishService } from 'src/app/services/dish.service';
 import { MenuPriceService } from 'src/app/services/menu-price.service';
+import { DateService } from 'src/app/services/date.service';
 
 interface MenuDish {
   dish: Dish;
@@ -84,6 +85,7 @@ export class MenuManagementComponent implements OnInit {
   private menuService = inject(MenuService);
   private dishService = inject(DishService);
   private menuPriceService = inject(MenuPriceService);
+  private dateService = inject(DateService);
   private alertController = inject(AlertController);
   private toastController = inject(ToastController);
   private route = inject(ActivatedRoute);

@@ -19,6 +19,7 @@ import { OrderService } from '../../../services/order.service';
 import { CommonModule } from '@angular/common';
 import { inject } from '@angular/core';
 import { Menu } from 'src/app/shared/interfaces/models';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-menu-list',
@@ -44,6 +45,7 @@ export class MenuListComponent implements OnInit {
   private orderService = inject(OrderService);
   private alertController = inject(AlertController);
   private toastController = inject(ToastController);
+  private authService = inject(AuthService);
 
   menus: Menu[] = [];
 
@@ -54,7 +56,7 @@ export class MenuListComponent implements OnInit {
   async loadMenus() {
     try {
       const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // tomorrow.setDate(tomorrow.getDate() + 1);
       this.menus = await this.menuService.getMenusForDate(tomorrow);
     } catch (error) {
       await this.showToast('Error al cargar menús', 'danger');
@@ -71,37 +73,58 @@ export class MenuListComponent implements OnInit {
   async orderMenu(menu: Menu) {
     if (!menu.id) return;
 
-    if (!this.canOrder(menu)) {
-      await this.showToast('No se pueden realizar pedidos para este menú', 'warning');
-      return;
-    }
+    try {
+      // Obtener el usuario actual
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) {
+        await this.showToast('Debes iniciar sesión para realizar pedidos', 'warning');
+        return;
+      }
 
-    const alert = await this.alertController.create({
-      header: 'Confirmar pedido',
-      message: `¿Deseas ordenar el menú "${menu.name}"?`,
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel'
-        },
-        {
-          text: 'Ordenar',
-          handler: async () => {
-            try {
-              const tomorrow = new Date();
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              await this.orderService.createOrder(menu.id!, tomorrow);
-              await this.showToast('Pedido realizado con éxito');
-              await this.loadMenus();
-            } catch (error) {
-              await this.showToast('Error al realizar el pedido', 'danger');
+      if (!this.canOrder(menu)) {
+        await this.showToast('No se pueden realizar pedidos para este menú', 'warning');
+        return;
+      }
+
+      const alert = await this.alertController.create({
+        header: 'Confirmar pedido',
+        message: `¿Deseas ordenar el menú "${menu.name}"?
+                 Precio: S/${menu.price}`,
+        buttons: [
+          {
+            text: 'Cancelar',
+            role: 'cancel'
+          },
+          {
+            text: 'Ordenar',
+            handler: async () => {
+              try {
+                // Crear la orden con el ID del usuario
+                await this.orderService.createOrder(
+                  menu.id!, 
+                  menu.date, // Usar la fecha del menú
+                  false, // No es orden de emergencia
+                  currentUser.id // Añadir el ID del usuario
+                );
+                
+                await this.showToast('Pedido realizado con éxito');
+                await this.loadMenus();
+              } catch (error: any) {
+                let message = 'Error al realizar el pedido';
+                if (error.message) {
+                  message = error.message;
+                }
+                await this.showToast(message, 'danger');
+              }
             }
           }
-        }
-      ]
-    });
+        ]
+      });
 
-    await alert.present();
+      await alert.present();
+    } catch (error) {
+      await this.showToast('Error inesperado', 'danger');
+    }
   }
 
   private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {

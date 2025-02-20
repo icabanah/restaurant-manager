@@ -1,3 +1,97 @@
-<p>
-  order-list works!
-</p>
+<!-- src/app/components/admin/orders/order-list/order-list.component.html -->
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Gestión de Pedidos</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadOrders()">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <ion-segment [(ngModel)]="selectedSegment" class="ion-padding">
+    <ion-segment-button value="pending">
+      Pendientes
+    </ion-segment-button>
+    <ion-segment-button value="completed">
+      Completados
+    </ion-segment-button>
+    <ion-segment-button value="emergency">
+      Emergencia
+    </ion-segment-button>
+    <ion-segment-button value="all">
+      Todos
+    </ion-segment-button>
+  </ion-segment>
+
+  @if (loading) {
+  <ion-list>
+    @for (item of [1,2,3]; track item) {
+    <ion-item>
+      <ion-label>
+        <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+        <ion-skeleton-text animated style="width: 80%"></ion-skeleton-text>
+        <ion-skeleton-text animated style="width: 40%"></ion-skeleton-text>
+      </ion-label>
+    </ion-item>
+    }
+  </ion-list>
+  } @else if (filterOrders().length === 0) {
+  <div class="ion-padding ion-text-center">
+    <p>{{ getEmptyMessage() }}</p>
+  </div>
+  } @else {
+  <ion-list>
+    @for (order of filterOrders(); track order.id) {
+    <ion-item>
+      <ion-label>
+        <h2>Pedido #{{ order.id }}</h2>
+        <p>
+          <ion-text color="medium">
+            Fecha de consumo: {{ order.consumptionDate | date:'fullDate':'UTC' }}
+          </ion-text>
+        </p>
+        <div class="ion-margin-top">
+          <ion-badge [color]="getStatusColor(order.status)">
+            {{ getStatusText(order.status) }}
+          </ion-badge>
+          @if (order.isEmergency) {
+          <ion-badge color="danger" class="ion-margin-start">
+            Emergencia
+          </ion-badge>
+          }
+          <ion-badge color="primary" class="ion-margin-start">
+            S/{{ order.cost.total }}
+          </ion-badge>
+        </div>
+      </ion-label>
+
+      <ion-buttons slot="end">
+        @if (order.status === 'pending') {
+        <ion-button fill="clear" color="success" (click)="confirmStatusChange(order, 'completed')">
+          <ion-icon name="checkmark-outline"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="danger" (click)="confirmStatusChange(order, 'cancelled')">
+          <ion-icon name="close-outline"></ion-icon>
+        </ion-button>
+        }
+        @if (order.status === 'emergency') {
+        <ion-button fill="clear" color="warning" (click)="confirmStatusChange(order, 'pending')">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+        </ion-button>
+        }
+      </ion-buttons>
+    </ion-item>
+    }
+  </ion-list>
+  }
+</ion-content>

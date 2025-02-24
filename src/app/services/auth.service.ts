@@ -19,9 +19,9 @@ import {
   updateDoc
 } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
 import { User } from '../shared/interfaces/models';
 import { NavigationService } from './navigation.service';
+// import { browserLocalPersistence, setPersistence } from '@angular/fire/auth';
 
 export interface AuthState {
   isLoading: boolean;
@@ -37,7 +37,6 @@ export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private router = inject(Router);
-  private ngZone = inject(NgZone);
   private navigationService = inject(NavigationService);
 
   // Estado de autenticación usando signals
@@ -56,7 +55,19 @@ export class AuthService {
   private readonly MAX_LOGIN_ATTEMPTS = 5;
 
   constructor() {
+    this.setPersistence();
     this.initializeAuthState();
+  }
+
+  private async setPersistence() {
+    try {
+      // Importar browserLocalPersistence de firebase/auth
+      const { browserLocalPersistence, setPersistence } = await import('@angular/fire/auth');
+      // Establecer persistencia local
+      await setPersistence(this.auth, browserLocalPersistence);
+    } catch (error) {
+      console.error('Error configurando persistencia:', error);
+    }
   }
 
   private initializeAuthState() { // Inicializar estado de autenticación
@@ -66,12 +77,19 @@ export class AuthService {
       try {
         if (firebaseUser) {
           await this.loadUserData(firebaseUser);
+          const role = this._currentUser()?.role || 'user'; // Obtener el rol del usuario, si no existe, asignar 'user'
+          await this.navigationService.navigateByRole(role as 'admin' | 'user'); // Navegar según el rol, si no existe, navegar a 'user', si no existe, navegar a 'admin'
+
         } else {
           this._currentUser.set(null);
+          if(!window.location.pathname.includes('/auth/')) {
+            await this.navigationService.navigateToLogin(); // Navegar a la página de login
+          }
         }
       } catch (error) {
-        console.error('Error initializing auth state:', error);
+        console.error('Error inicializando estado de auth:', error);
         this._error.set('Error al cargar datos del usuario');
+        await this.navigationService.navigateToLogin();
       } finally {
         this._isLoading.set(false);
       }
@@ -161,7 +179,7 @@ export class AuthService {
           await this.navigationService.navigateByRole('admin');
         } else {
           await this.navigationService.navigateByRole('user');
-        } 
+        }
 
         return true;
       }

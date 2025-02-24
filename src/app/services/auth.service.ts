@@ -161,7 +161,7 @@ export class AuthService {
           await this.navigationService.navigateByRole('admin');
         } else {
           await this.navigationService.navigateByRole('user');
-        }
+        } 
 
         return true;
       }

@@ -8,6 +8,7 @@ import {
   IonItem,
   IonLabel,
   IonButton,
+  IonButtons,
   IonBadge,
   IonText,
   AlertController,
@@ -23,6 +24,7 @@ import { Menu } from 'src/app/shared/interfaces/models';
 import { AuthService } from 'src/app/services/auth.service';
 import { DateService } from 'src/app/services/date.service';
 import { MenuOrderDialogComponent } from '../menu-order-dialog/menu-order-dialog.component';
+import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
 
 @Component({
   selector: 'app-menu-list',
@@ -38,10 +40,12 @@ import { MenuOrderDialogComponent } from '../menu-order-dialog/menu-order-dialog
     IonItem,
     IonLabel,
     IonButton,
+    IonButtons,
     IonBadge,
     IonText,
     IonSegment, 
-    MenuOrderDialogComponent
+    MenuOrderDialogComponent,
+    LogoutButtonComponent
   ]
 })
 export class MenuListComponent implements OnInit {

@@ -50,6 +50,7 @@ import { Router } from '@angular/router';
 import { MenuService } from 'src/app/services/menu.service';
 import { Menu, Order } from 'src/app/shared/interfaces/models';
 import { DateService } from 'src/app/services/date.service';
+import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
 
 interface DashboardStats {
   activeMenus: number;
@@ -86,7 +87,8 @@ interface DashboardStats {
     IonRefresher,
     IonRefresherContent,
     IonSkeletonText,
-    IonSpinner
+    IonSpinner,
+    LogoutButtonComponent
   ],
   templateUrl: './dashboard.component.html'
 })

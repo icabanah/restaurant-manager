@@ -21,7 +21,7 @@
         <p>{{ menu.description }}</p>
         <p>
           <ion-text color="medium">
-            Fecha: {{ menu.date | date:'EEEE, d MMMM y':'UTC':'es' }}
+            Fecha: {{ menu.date | date:'EEEE, d MMMM y':'':'es' }}
           </ion-text>
         </p>
         <div class="ion-margin-top">
@@ -33,7 +33,7 @@
             Aceptando pedidos
           </ion-badge>
           <ion-text color="medium" class="ion-margin-start">
-            <p>Pedidos hasta 23:59 del {{ menu.orderDeadline | date:'dd/MM/yy' }}</p>
+            <p>Pedidos hasta: {{ menu.orderDeadline | date:'EEEE, d MMMM y':'':'es' }}</p>
           </ion-text>
           } @else if (menu.status === 'closed') {
           <ion-badge color="warning" class="ion-margin-start">

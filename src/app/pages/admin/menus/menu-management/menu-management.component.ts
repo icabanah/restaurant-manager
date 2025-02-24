@@ -29,13 +29,13 @@ import {
   IonSkeletonText
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { 
-  refreshOutline, 
-  createOutline, 
-  trashOutline, 
-  addOutline, 
-  removeCircleOutline, 
-  addCircleOutline 
+import {
+  refreshOutline,
+  createOutline,
+  trashOutline,
+  addOutline,
+  removeCircleOutline,
+  addCircleOutline
 } from 'ionicons/icons';
 import { Dish, Menu } from 'src/app/shared/interfaces/models';
 import { DishSelectorComponent } from '../../dish/dish-selector/dish-selector.component';
@@ -97,6 +97,7 @@ export class MenuManagementComponent implements OnInit {
     active: [true],
     price: [0]
   });
+
   menus: Menu[] = [];
   selectedDishes: MenuDish[] = [];
   isEmergencyMenu = false;
@@ -111,9 +112,9 @@ export class MenuManagementComponent implements OnInit {
   }
 
   public initializeIcons() {
-    addIcons({ 
-      refreshOutline, 
-      createOutline, 
+    addIcons({
+      refreshOutline,
+      createOutline,
       trashOutline,
       addOutline,
       removeCircleOutline,
@@ -154,7 +155,13 @@ export class MenuManagementComponent implements OnInit {
     this.loading = true;
     try {
       const today = new Date();
-      this.menus = await this.menuService.getMenusForDate(today);
+      console.log('Today:', today);
+      console.log('Yesterday:', this.dateService.setYesterday(today));
+      console.log('Tomorrow:', this.dateService.setTomorrow(today));
+      
+      
+
+      this.menus = await this.menuService.getMenusForDate( this.dateService.setYesterday(today), this.dateService.setTomorrow(today));
     } catch (error) {
       await this.showToast('Error al cargar menús', 'danger');
     } finally {
@@ -180,11 +187,15 @@ export class MenuManagementComponent implements OnInit {
     }
   }
 
-  private patchFormWithMenu(menu: Menu) {
+  private patchFormWithMenu(menu: Menu) { // Español: Rellenar formulario con menú
+    // const localDate = new Date(menu.date);
+    const localDate = menu.date;
+    localDate.setHours(localDate.getHours() + 5); // Ajuste de zona horaria
+
     this.menuForm.patchValue({
       name: menu.name,
       description: menu.description,
-      date: menu.date.toISOString().split('T')[0],
+      date: localDate.toISOString().split('T')[0],
       active: menu.active
     });
 
@@ -204,6 +215,11 @@ export class MenuManagementComponent implements OnInit {
   }
 
   async onSubmit() {
+    if (!this.validateMenuDate(new Date(this.menuForm.value.date))) {
+      await this.showToast('La fecha del menú debe ser igual o posterior a hoy', 'warning');
+      return;
+    }
+
     if (!this.menuForm.valid || this.selectedDishes.length === 0) {
       await this.showValidationErrors();
       return;
@@ -228,7 +244,7 @@ export class MenuManagementComponent implements OnInit {
 
     try {
       const menuData = this.prepareMenuData();
-      
+
       if (this.isEditing && this.currentMenuId) {
         await this.menuService.updateMenu(this.currentMenuId, menuData);
         await this.showToast('Menú actualizado correctamente');
@@ -245,9 +261,12 @@ export class MenuManagementComponent implements OnInit {
   }
 
   private prepareMenuData(): Omit<Menu, 'id'> {
+    const menuDate = new Date(this.menuForm.value.date);
+    menuDate.setDate(menuDate.getDate() + 1); // Ajuste de zona horaria (UTC+5)
+    
     return {
       ...this.menuForm.value,
-      date: new Date(this.menuForm.value.date),
+      date: menuDate,
       dishes: this.selectedDishes.map(item => ({
         dishId: item.dish.id!,
         name: item.dish.name,
@@ -259,8 +278,14 @@ export class MenuManagementComponent implements OnInit {
       price: this.calculateTotalPrice(),
       currentOrders: 0,
       status: this.isEmergencyMenu ? 'accepting_orders' : 'accepting_orders',
-      orderDeadline: this.calculateOrderDeadline(new Date(this.menuForm.value.date))
+      orderDeadline: this.dateService.calculateOrderDeadline(menuDate)
     };
+  }
+
+  private validateMenuDate(date: Date): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
   }
 
   private calculateOrderDeadline(menuDate: Date): Date {
@@ -281,6 +306,19 @@ export class MenuManagementComponent implements OnInit {
     }));
 
     return this.menuPriceService.calculateMenuPrice(menuDishes);
+  }
+
+  get minDate(): string {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  }
+  
+  private validateDateRange(date: Date): boolean {
+    const maxDaysInFuture = 30; // Ajustar según necesidades
+    const today = new Date();
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= maxDaysInFuture;
   }
 
   private async showValidationErrors() {
@@ -311,17 +349,17 @@ export class MenuManagementComponent implements OnInit {
     console.log('Form valid:', this.menuForm.valid);
     console.log('Form values:', this.menuForm.value);
     console.log('Selected dishes:', this.selectedDishes.length);
-    
+
     const isValid = this.menuForm.valid && this.selectedDishes.length > 0;
     console.log('Is form valid?', isValid);
-    
+
     return isValid;
   }
 
   updateQuantity(index: number, increment: number) {
     const dish = this.selectedDishes[index];
     const newQuantity = dish.quantity + increment;
-    
+
     if (newQuantity < 1) {
       this.removeDish(index);
     } else {

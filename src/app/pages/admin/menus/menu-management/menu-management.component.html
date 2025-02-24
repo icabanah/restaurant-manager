@@ -43,7 +43,7 @@
 
       <ion-item>
         <ion-label position="floating">Fecha</ion-label>
-        <ion-input formControlName="date" type="date" [disabled]="isEmergencyMenu"></ion-input>
+        <ion-input formControlName="date" type="date" [min]="minDate" [disabled]="isEmergencyMenu"></ion-input>
       </ion-item>
       @if (menuForm.get('date')?.touched && menuForm.get('date')?.errors?.['required']) {
         <ion-text color="danger" class="ion-padding-start">
@@ -154,16 +154,16 @@
           <p>{{ menu.description }}</p>
           <p>
             <ion-text color="medium">
-              Fecha: {{ menu.date | date:'fullDate':'UTC' }}
+              {{ menu.date | date:'EEEE, d MMMM y':'':'es' }}
             </ion-text>
           </p>
           <div class="ion-margin-top">
             <ion-badge color="primary">
               Precio: S/{{ menu.price | number:'1.2-2' }}
             </ion-badge>
-            <ion-badge color="secondary" class="ion-margin-start">
+            <!-- <ion-badge color="secondary" class="ion-margin-start">
               Pedidos: {{ menu.currentOrders }}
-            </ion-badge>
+            </ion-badge> -->
             @if (menu.active) {
               <ion-badge color="success" class="ion-margin-start">Activo</ion-badge>
             } @else {

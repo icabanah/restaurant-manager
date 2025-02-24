@@ -151,18 +151,18 @@
               </ion-label>
             </ion-item>
           }
-        } @else if (latestMenus.length === 0) {
+        } @else if (menus.length === 0) {
           <ion-item>
             <ion-label class="text-center text-gray-500">
               No hay menús disponibles
             </ion-label>
           </ion-item>
         } @else {
-          @for (menu of latestMenus; track menu.id) {
+          @for (menu of menus; track menu.id) {
             <ion-item>
               <ion-label>
                 <h2>{{ menu.name }}</h2>
-                <p>{{ menu.date | date:'fullDate': 'UTC' }}</p>
+                <p>{{ menu.date | date:'EEEE, d MMMM y':'':'es' }}</p>
                 <div class="flex gap-2 mt-1">
                   <ion-badge color="primary">S/{{ menu.price }}</ion-badge>
                   <ion-badge [color]="menu.active ? 'success' : 'medium'">

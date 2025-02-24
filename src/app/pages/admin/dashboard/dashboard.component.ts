@@ -49,6 +49,7 @@ import { OrderService } from 'src/app/services/order.service';
 import { Router } from '@angular/router';
 import { MenuService } from 'src/app/services/menu.service';
 import { Menu, Order } from 'src/app/shared/interfaces/models';
+import { DateService } from 'src/app/services/date.service';
 
 interface DashboardStats {
   activeMenus: number;
@@ -95,6 +96,7 @@ export class DashboardComponent implements OnInit {
   private alertController = inject(AlertController);
   private toastController = inject(ToastController);
   private router = inject(Router);
+  private dateService = inject(DateService);
 
   loading = true;
   stats: DashboardStats = {
@@ -105,7 +107,7 @@ export class DashboardComponent implements OnInit {
     cancelledOrders: 0,
     emergencyOrders: 0
   };
-  latestMenus: Menu[] = [];
+  menus: Menu[] = [];
 
   constructor() {
     addIcons({ 
@@ -138,12 +140,10 @@ export class DashboardComponent implements OnInit {
   async loadDashboardData() {
     this.loading = true;
     try {
-      // Cargar menús de los próximos días
-      const today = new Date();
-      this.latestMenus = await this.menuService.getMenusForDate(today);
+      this.menus = await this.menuService.getMenusForDate( this.dateService.setYesterday(new Date()), this.dateService.setTomorrow(new Date()) );
       
       // Calcular estadísticas de menús activos
-      this.stats.activeMenus = this.latestMenus.filter((menu: Menu) => menu.active).length;
+      this.stats.activeMenus = this.menus.filter((menu: Menu) => menu.active).length;
 
       // Obtener todas las órdenes y calcular estadísticas
       const orders = await this.orderService.getOrders();

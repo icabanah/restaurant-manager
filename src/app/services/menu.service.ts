@@ -44,17 +44,25 @@ export class MenuService {
     return docRef.id;
   }
 
-  async getMenusForDate(date: Date): Promise<Menu[]> {
+  async getMenusForDate(startDate: Date, endDate: Date): Promise<Menu[]> {
     try {
       // Utilizamos el DateService para obtener el inicio y fin del día
-      const startOfDay = this.dateService.getStartOfDay(date);
-      const endOfDay = this.dateService.getEndOfDay(date);
+      const startOfDay = this.dateService.getStartOfDay(startDate);
+      const endOfDay = this.dateService.getEndOfDay(endDate);
+      // const startOfDay = new Date(date);
+      // startOfDay.setHours(0, 0, 0, 0);
+
+      // const endOfDay = new Date(date);
+      // endOfDay.setHours(23, 59, 59, 999);
+
+      console.log('Buscando menus entre: ', startOfDay, 'y', endOfDay);
 
       const menuCollection = collection(this.firestore, 'menus');
       const q = query(
         menuCollection,
         where('date', '>=', startOfDay),
-        where('date', '<=', endOfDay)
+        where('date', '<=', endOfDay),
+        // where('active', '==', true)
       );
 
       const querySnapshot = await getDocs(q);

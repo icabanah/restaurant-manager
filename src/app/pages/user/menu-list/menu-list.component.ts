@@ -60,12 +60,13 @@ export class MenuListComponent implements OnInit {
 
   async loadMenus() {
     try {
-      // Obtenemos la fecha de mañana y la convertimos a UTC
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowUTC = this.dateService.toUTCDate(tomorrow);
+      const yesterday = this.dateService.setYesterday(new Date());
+      // const todayUTC = this.dateService.toUTCDate(today);
 
-      this.menus = await this.menuService.getMenusForDate(tomorrowUTC);
+      const tomorrow = this.dateService.setTomorrow(new Date());
+      // const tomorrowUTC = this.dateService.toUTCDate(tomorrow);
+
+      this.menus = await this.menuService.getMenusForDate( yesterday, tomorrow);
     } catch (error) {
       await this.showToast('Error al cargar menús', 'danger');
     }

@@ -40,7 +40,8 @@ import { MenuOrderDialogComponent } from '../menu-order-dialog/menu-order-dialog
     IonButton,
     IonBadge,
     IonText,
-    IonSegment
+    IonSegment, 
+    MenuOrderDialogComponent
   ]
 })
 export class MenuListComponent implements OnInit {
@@ -61,10 +62,7 @@ export class MenuListComponent implements OnInit {
   async loadMenus() {
     try {
       const yesterday = this.dateService.setYesterday(new Date());
-      // const todayUTC = this.dateService.toUTCDate(today);
-
       const tomorrow = this.dateService.setTomorrow(new Date());
-      // const tomorrowUTC = this.dateService.toUTCDate(tomorrow);
 
       this.menus = await this.menuService.getMenusForDate( yesterday, tomorrow);
     } catch (error) {

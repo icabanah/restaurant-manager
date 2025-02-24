@@ -1,7 +1,7 @@
 // src/app/services/auth.service.ts
 import { Injectable, NgZone, inject, signal, computed } from '@angular/core';
-import { 
-  Auth, 
+import {
+  Auth,
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
@@ -11,16 +11,17 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from '@angular/fire/auth';
-import { 
-  Firestore, 
-  doc, 
-  getDoc, 
+import {
+  Firestore,
+  doc,
+  getDoc,
   setDoc,
   updateDoc
 } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { User } from '../shared/interfaces/models';
+import { NavigationService } from './navigation.service';
 
 export interface AuthState {
   isLoading: boolean;
@@ -37,12 +38,13 @@ export class AuthService {
   private firestore = inject(Firestore);
   private router = inject(Router);
   private ngZone = inject(NgZone);
-  
+  private navigationService = inject(NavigationService);
+
   // Estado de autenticación usando signals
   private readonly _currentUser = signal<User | null>(null);
   private readonly _isLoading = signal<boolean>(true);
   private readonly _error = signal<string | null>(null);
-  
+
   // Computed signals para estados derivados
   readonly isAuthenticated = computed(() => !!this._currentUser());
   readonly isAdmin = computed(() => this._currentUser()?.role === 'admin');
@@ -52,7 +54,7 @@ export class AuthService {
 
   // Máximo de intentos de login fallidos antes de bloquear la cuenta
   private readonly MAX_LOGIN_ATTEMPTS = 5;
-  
+
   constructor() {
     this.initializeAuthState();
   }
@@ -60,7 +62,7 @@ export class AuthService {
   private initializeAuthState() { // Inicializar estado de autenticación
     onAuthStateChanged(this.auth, async (firebaseUser) => {
       this._isLoading.set(true);
-      
+
       try {
         if (firebaseUser) {
           await this.loadUserData(firebaseUser);
@@ -81,15 +83,15 @@ export class AuthService {
       console.log('Intentando cargar datos para usuario:', firebaseUser.uid);
       const userDocRef = doc(this.firestore, 'users', firebaseUser.uid);
       const userDoc = await getDoc(userDocRef);
-  
+
       if (!userDoc.exists()) {
         console.error('No existe documento para el usuario en Firestore');
-        
+
         // Verificar que tenemos un email
         if (!firebaseUser.email) {
           throw new Error('El usuario debe tener un email válido');
         }
-  
+
         const initialUserData: Omit<User, 'id'> = {
           email: firebaseUser.email,
           name: firebaseUser.displayName || '',
@@ -100,23 +102,23 @@ export class AuthService {
           locked: false,
           createdAt: new Date()
         };
-  
+
         await setDoc(userDocRef, initialUserData);
-        
+
         this._currentUser.set({
           id: firebaseUser.uid,
           ...initialUserData
         });
         return;
       }
-  
+
       const userData = userDoc.data() as Omit<User, 'id' | 'email'>;
-      
+
       if (userData.locked) {
         await this.logout();
         throw new Error('Tu cuenta está bloqueada. Contacta al administrador.');
       }
-  
+
       // Actualizar último login
       try {
         await updateDoc(userDocRef, {
@@ -126,46 +128,53 @@ export class AuthService {
       } catch (updateError) {
         console.warn('No se pudo actualizar lastLogin:', updateError);
       }
-  
+
       // Asegurarnos de que tenemos un email válido
       if (!firebaseUser.email) {
         throw new Error('El usuario debe tener un email válido');
       }
-  
+
       this._currentUser.set({
         id: firebaseUser.uid,
         email: firebaseUser.email,
         ...userData
       });
-  
+
     } catch (error) {
       console.error('Error detallado cargando datos:', error);
       throw new Error('Error al cargar los datos del usuario');
     }
   }
+
   async login(email: string, password: string): Promise<boolean> {
     this._isLoading.set(true);
     this._error.set(null);
-  
+
     try {
-      console.log('Intentando login con:', email);
       const result = await signInWithEmailAndPassword(this.auth, email, password);
-      
+
       if (result.user) {
-        console.log('Login exitoso, UID:', result.user.uid);
         await this.loadUserData(result.user);
+
+        // Redireccionar según el rol
+        if (this.isAdmin()) {
+          await this.navigationService.navigateByRole('admin');
+        } else {
+          await this.navigationService.navigateByRole('user');
+        }
+
         return true;
       }
       return false;
     } catch (error: any) {
       console.error('Error detallado en login:', error);
-      
+
       if (error.code === 'auth/wrong-password') {
         await this.incrementFailedLoginAttempts(email);
       }
-  
+
       this._error.set(this.getErrorMessage(error.code));
-      throw error;
+      return false;  // Añadimos el return false en el catch
     } finally {
       this._isLoading.set(false);
     }
@@ -178,11 +187,11 @@ export class AuthService {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(this.auth, provider);
-      
+
       if (result.user) {
         // Verificar si el usuario ya existe en Firestore
         const userDoc = await getDoc(doc(this.firestore, 'users', result.user.uid));
-        
+
         if (!userDoc.exists()) {
           // Crear nuevo usuario en Firestore
           await setDoc(doc(this.firestore, 'users', result.user.uid), {

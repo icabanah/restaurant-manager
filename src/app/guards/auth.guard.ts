@@ -1,22 +1,60 @@
-// src/app/guards/auth.guard.ts
-import { type CanActivateFn } from '@angular/router';
+// auth.guard.ts
+import { inject } from '@angular/core';
+import { Router, type CanActivateFn } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
-// Guard para rutas que requieren autenticación (temporalmente deshabilitado)
-export const authGuard: CanActivateFn = async () => {
-  return true; // Permitir acceso a todas las rutas
+export const authGuard: CanActivateFn = async (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Si no está autenticado, redirigir al login
+  if (!authService.isAuthenticated()) {
+    await router.navigate(['/auth/login']);
+    return false;
+  }
+  
+  return true; // Usuario autenticado
 };
 
-// Guard para rutas que requieren rol de administrador
-export const adminGuard: CanActivateFn = async () => {
-  return true; // Permitir acceso a todas las rutas de admin
+export const adminGuard: CanActivateFn = async (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Si no es admin, redirigir al menú de usuario
+  if (!authService.isAdmin()) {
+    await router.navigate(['/user/menu']);
+    return false;
+  }
+  
+  return true; // Usuario es admin
 };
 
-// Guard para rutas públicas (login, registro)
 export const publicGuard: CanActivateFn = async () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Si está autenticado, redirigir según rol
+  if (authService.isAuthenticated()) {
+    if (authService.isAdmin()) {
+      await router.navigate(['/admin/dashboard']);
+    } else {
+      await router.navigate(['/user/menu']);
+    }
+    return false;
+  }
+  
   return true; // Permitir acceso a rutas públicas
 };
 
-// Guard para rutas de usuario regular
 export const userGuard: CanActivateFn = async () => {
-  return true; // Permitir acceso a rutas de usuario
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Si es admin, redirigir al dashboard
+  if (authService.isAdmin()) {
+    await router.navigate(['/admin/dashboard']);
+    return false;
+  }
+  
+  return true; // Usuario normal
 };

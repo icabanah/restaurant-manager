@@ -43,6 +43,7 @@ import { MenuService } from 'src/app/services/menu.service';
 import { DishService } from 'src/app/services/dish.service';
 import { MenuPriceService } from 'src/app/services/menu-price.service';
 import { DateService } from 'src/app/services/date.service';
+import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
 
 interface MenuDish {
   dish: Dish;
@@ -77,7 +78,8 @@ interface MenuDish {
     IonRefresherContent,
     IonMenuButton,
     DishSelectorComponent,
-    IonSkeletonText
+    IonSkeletonText,
+    LogoutButtonComponent
   ]
 })
 export class MenuManagementComponent implements OnInit {

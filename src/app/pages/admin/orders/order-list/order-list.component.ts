@@ -36,6 +36,7 @@ import {
 import { OrderService } from '../../../../services/order.service';
 import { MenuService } from '../../../../services/menu.service';
 import { Order } from '../../../../shared/interfaces/models';
+import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
 
 type OrderStatus = 'pending' | 'completed' | 'cancelled' | 'emergency';
 
@@ -64,7 +65,8 @@ type OrderStatus = 'pending' | 'completed' | 'cancelled' | 'emergency';
     IonButtons,
     IonMenuButton,
     IonText,
-    IonNote
+    IonNote,
+    LogoutButtonComponent
   ],
 })
 export class OrderListComponent implements OnInit {

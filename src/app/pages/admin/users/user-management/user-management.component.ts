@@ -27,6 +27,7 @@ import { addIcons } from 'ionicons';
 import { createOutline, trashOutline, refreshOutline } from 'ionicons/icons';
 import { UserService } from 'src/app/services/user.service';
 import { User } from 'src/app/shared/interfaces/models';
+import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
 
 @Component({
   selector: 'app-user-management',
@@ -52,7 +53,8 @@ import { User } from 'src/app/shared/interfaces/models';
     IonSearchbar,
     IonSelect,
     IonSelectOption,
-    IonListHeader
+    IonListHeader,
+    LogoutButtonComponent
   ]
 })
 export class UserManagementComponent implements OnInit {

@@ -35,6 +35,7 @@ import {
   createOutline, 
   trashOutline 
 } from 'ionicons/icons';
+import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
 
 @Component({
   selector: 'app-dish-management',
@@ -63,7 +64,8 @@ import {
     IonSelectOption,
     IonRefresher,
     IonRefresherContent,
-    IonSkeletonText
+    IonSkeletonText, 
+    LogoutButtonComponent
   ]
 })
 export class DishManagementComponent implements OnInit {

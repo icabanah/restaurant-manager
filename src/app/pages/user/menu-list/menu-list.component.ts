@@ -11,9 +11,8 @@ import {
   IonButtons,
   IonBadge,
   IonText,
-  AlertController,
-  ToastController,
   IonSegment,
+  ToastController,
   ModalController
 } from '@ionic/angular/standalone';
 import { MenuService } from '../../../services/menu.service';
@@ -25,6 +24,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DateService } from 'src/app/services/date.service';
 import { MenuOrderDialogComponent } from '../menu-order-dialog/menu-order-dialog.component';
 import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
+import { OrderMenuModalComponent } from '../order-menu-modal/order-menu-modal.component';
 
 @Component({
   selector: 'app-menu-list',
@@ -52,7 +52,6 @@ export class MenuListComponent implements OnInit {
   private menuService = inject(MenuService);
   private orderService = inject(OrderService);
   private dateService = inject(DateService);
-  private alertController = inject(AlertController);
   private modalController = inject(ModalController);
   private toastController = inject(ToastController);
   private authService = inject(AuthService);
@@ -66,7 +65,10 @@ export class MenuListComponent implements OnInit {
   async loadMenus() {
     try {
       const yesterday = this.dateService.setYesterday(new Date());
+      console.log(yesterday);
+      
       const tomorrow = this.dateService.setTomorrow(new Date());
+      console.log(tomorrow);
 
       this.menus = await this.menuService.getMenusForDate( yesterday, tomorrow);
     } catch (error) {
@@ -98,17 +100,16 @@ export class MenuListComponent implements OnInit {
 
       // Crear y presentar el modal de selección de platillos
       const modal = await this.modalController.create({
-        component: MenuOrderDialogComponent,
+        component: OrderMenuModalComponent,
         componentProps: {
           menu: menu
         }
       });
-
       await modal.present();
 
       // Manejar el resultado del modal
       const result = await modal.onDidDismiss();
-      if (result.data) {
+      if (result?.data) {
         await this.orderService.createOrder(
           menu.id,
           menu.date,

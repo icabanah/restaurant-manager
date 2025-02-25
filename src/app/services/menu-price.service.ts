@@ -12,7 +12,7 @@ export class MenuPriceService {
 
   calculateMenuPrice(dishes: MenuDish[]): number {
     const hasStarter = dishes.some(dish => dish.category === 'entrada');
-    const hasMainCourse = dishes.some(dish => dish.category === 'fondo');
+    const hasMainCourse = dishes.some(dish => dish.category === 'fondo'); // Fondo = Plato principal
     const hasDessert = dishes.some(dish => dish.category === 'postre');
 
     // El precio base depende de la combinación de platos

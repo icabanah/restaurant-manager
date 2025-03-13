@@ -20,6 +20,12 @@ export const USER_ROUTES: Routes = [
     title: 'Historial de Pedidos'
   },
   {
+    path: 'my-qr',
+    loadComponent: () => import('./my-qr/my-qr.component')
+      .then(m => m.MyQrComponent),
+    title: 'Mis Códigos QR'
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./profile/profile.component')
       .then(m => m.ProfileComponent),

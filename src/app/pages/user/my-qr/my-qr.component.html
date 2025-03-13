@@ -1,3 +1,116 @@
-<p>
-  my-qr works!
-</p>
+<!-- src/app/pages/user/my-qr/my-qr.component.html -->
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Mis Códigos QR</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadUserOrders()">
+        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+      </ion-button>
+      <app-logout-button></app-logout-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Estado de carga -->
+  @if (loading) {
+    <ion-card>
+      <ion-card-content class="ion-text-center">
+        <ion-skeleton-text animated style="width: 80%; margin: 0 auto;"></ion-skeleton-text>
+        <ion-skeleton-text animated style="width: 60%; margin: 16px auto;"></ion-skeleton-text>
+        <div style="width: 200px; height: 200px; margin: 0 auto;">
+          <ion-skeleton-text animated style="width: 100%; height: 100%;"></ion-skeleton-text>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  } @else if (orders.length === 0) {
+    <!-- Sin pedidos -->
+    <ion-card>
+      <ion-card-content class="ion-text-center">
+        <ion-icon name="restaurant-outline" style="font-size: 64px; color: var(--ion-color-medium);"></ion-icon>
+        <h2>No tienes pedidos activos</h2>
+        <p>Realiza un pedido para obtener tu código QR</p>
+        <ion-button routerLink="/user/menu" expand="block" class="ion-margin-top">
+          Ver Menú
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  } @else {
+    <!-- Tarjeta de QR para el pedido seleccionado -->
+    @if (activeOrder) {
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title class="ion-text-center">
+            Tu código QR
+          </ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content class="ion-text-center">
+          <p>
+            <ion-badge [color]="getStatusColor(activeOrder.status)">
+              {{ getStatusText(activeOrder.status) }}
+            </ion-badge>
+          </p>
+          <p>
+            <ion-icon name="calendar-outline"></ion-icon>
+            {{ activeOrder.consumptionDate | date:'EEEE, d MMMM y':'':'es' }}
+          </p>
+          <p>
+            <ion-icon name="time-outline"></ion-icon>
+            {{ activeOrder.consumptionDate | date:'h:mm a':'':'es' }}
+          </p>
+
+          <!-- Código QR -->
+          <div class="qr-container">
+            <qrcode 
+              [qrdata]="qrCodeData" 
+              [width]="256" 
+              [errorCorrectionLevel]="'M'"
+              [elementType]="'canvas'"
+              [centerImageSrc]="'assets/icon/favicon.png'"
+              [centerImageSize]="60"
+              [margin]="2">
+            </qrcode>
+          </div>
+
+          <p class="ion-margin-top">
+            <ion-text color="medium">
+              Presenta este código al personal del restaurante
+            </ion-text>
+          </p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Detalles del pedido -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Detalles del Pedido</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+          <ion-list>
+            @for (dish of activeOrder.selectedDishes; track dish.dishId) {
+              <ion-item>
+                <ion-label>{{ dish.name }}</ion-label>
+                <ion-badge slot="end" color="medium">{{ dish.category }}</ion-badge>
+              </ion-item>
+            }
+          </ion-list>
+
+          <div class="ion-margin-top">
+            <p><strong>Total:</strong> S/{{ activeOrder.cost.total | number:'1.2-2' }}</p>
+            <p><ion-text color="success">Empresa paga: S/{{ activeOrder.cost.companyShare | number:'1.2-2' }}</ion-text></p>
+            <p><ion-text color="primary">Tu pago: S/{{ activeOrder.cost.employeeShare | number:'1.2-2' }}</ion-text></p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+  }
+</ion-content>

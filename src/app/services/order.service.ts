@@ -11,7 +11,8 @@ import {
   getDoc,
   orderBy,
   Timestamp,
-  DocumentData
+  DocumentData,
+  limit
 } from '@angular/fire/firestore';
 import { MenuService } from './menu.service';
 import { MenuPriceService } from './menu-price.service';
@@ -35,6 +36,9 @@ export class OrderService {
    * @param total Precio total calculado
    * @param isEmergency Indica si es un pedido de emergencia
    * @param userId ID del usuario que realiza el pedido
+   * Obtiene un pedido específico por su ID
+   * @param orderId ID del pedido
+   * @returns El pedido o null si no existe
    */
 
   async createOrder(
@@ -62,6 +66,12 @@ export class OrderService {
       const existingOrder = await this.getUserOrderForMenu(userId, menuId);
       if (existingOrder) {
         throw new Error('Ya tienes un pedido para este menú');
+      }
+
+      // Verificar que el usuario no tenga una orden existente activa
+      const existingActiveOrders = await this.getUserActiveOrders(userId);
+      if (existingActiveOrders.length > 0) {
+        throw new Error('Ya tienes un pedido activo. No puedes crear otro hasta que el actual sea completado o cancelado.');
       }
 
       // Validar que el menú está aceptando pedidos (excepto para emergencias)
@@ -126,6 +136,53 @@ export class OrderService {
   }
 
   /**
+ * Obtiene un pedido específico por su ID
+ * @param orderId ID del pedido
+ * @returns El pedido o null si no existe
+ */
+  async getOrderById(orderId: string): Promise<Order | null> {
+    try {
+      const orderRef = doc(this.firestore, 'orders', orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        return null;
+      }
+
+      return this.mapOrderDocument(orderDoc.id, orderDoc.data());
+    } catch (error) {
+      console.error('Error getting order by ID:', error);
+      throw new Error('Error al obtener el pedido');
+    }
+  }
+
+  /**
+ * Valida un código QR de pedido
+ * @param qrCode Código QR a validar
+ * @returns El pedido asociado o null si no es válido
+ */
+  async validateOrderQR(qrCode: string): Promise<Order | null> {
+    try {
+      const q = query(
+        collection(this.firestore, 'orders'),
+        where('qrCode', '==', qrCode),
+        limit(1)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        return null;
+      }
+
+      return this.mapOrderDocument(querySnapshot.docs[0].id, querySnapshot.docs[0].data());
+    } catch (error) {
+      console.error('Error validating QR code:', error);
+      throw new Error('Error al validar el código QR');
+    }
+  }
+
+  /**
    * Obtiene las órdenes de un usuario específico
    */
   async getUserOrders(userId: string): Promise<Order[]> {
@@ -142,6 +199,18 @@ export class OrderService {
       console.error('Error getting user orders:', error);
       throw new Error('Error al obtener los pedidos del usuario');
     }
+  }
+
+  // Método adicional para obtener órdenes activas de un usuario
+  async getUserActiveOrders(userId: string): Promise<Order[]> {
+    const q = query(
+      collection(this.firestore, 'orders'),
+      where('userId', '==', userId),
+      where('status', 'in', ['pending', 'emergency'])
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapOrderDocument(doc.id, doc.data()));
   }
 
   /**
@@ -200,15 +269,54 @@ export class OrderService {
   }
 
   /**
-   * Actualiza el estado de una orden
-   */
-  async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+ * Actualiza el estado de una orden y registra el evento
+ * @param orderId ID del pedido
+ * @param status Nuevo estado
+ * @param adminId ID del administrador que actualiza (opcional)
+ */
+  async updateOrderStatus(orderId: string, status: Order['status'], adminId?: string): Promise<void> {
     try {
       const orderRef = doc(this.firestore, 'orders', orderId);
-      await updateDoc(orderRef, {
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        throw new Error('Pedido no encontrado');
+      }
+
+      // Actualizamos el estado
+      const updateData: any = {
         status,
         lastUpdated: new Date()
-      });
+      };
+
+      // Si se cancela, registramos la fecha
+      if (status === 'cancelled') {
+        updateData.cancelledAt = new Date();
+      }
+
+      // Si se completa, registramos la fecha
+      if (status === 'completed') {
+        updateData.completedAt = new Date();
+      }
+
+      // Si se proporciona un ID de administrador, registrarlo
+      if (adminId) {
+        updateData.updatedBy = adminId;
+      }
+
+      await updateDoc(orderRef, updateData);
+
+      // Si el pedido se cancela, actualizamos el contador del menú
+      if (status === 'cancelled') {
+        const orderData = orderDoc.data();
+        const menu = await this.getMenuById(orderData['menuId']);
+
+        if (menu) {
+          await this.menuService.updateMenu(menu.id!, {
+            currentOrders: Math.max(0, menu.currentOrders - 1)
+          });
+        }
+      }
     } catch (error) {
       console.error('Error updating order status:', error);
       throw new Error('Error al actualizar el estado del pedido');
@@ -305,11 +413,12 @@ export class OrderService {
   }
 
   /**
-   * Genera un código QR único para la orden
-   */
+ * Genera un código QR único para un pedido
+ * @returns Código QR único
+ */
   private generateQRCode(): string {
     const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 15);
+    const random = Math.random().toString(36).substring(2, 12);
     return `ORDER-${timestamp}-${random}`;
   }
 }

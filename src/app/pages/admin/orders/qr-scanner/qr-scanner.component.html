@@ -1,3 +1,150 @@
-<p>
-  qr-scanner works!
-</p>
+<!-- src/app/pages/admin/orders/qr-scanner/qr-scanner.component.html -->
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Escáner de QR</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="toggleTorch()" *ngIf="hasPermission">
+        <ion-icon [name]="torchEnabled ? 'flashlight-outline' : 'flashlight-outline'"></ion-icon>
+      </ion-button>
+      <app-logout-button></app-logout-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <!-- Scanner -->
+  <div class="scanner-container">
+    <zxing-scanner
+      *ngIf="scannerEnabled"
+      [torch]="torchEnabled"
+      [device]="currentDevice"
+      [formats]="allowedFormats"
+      (scanSuccess)="scanSuccessHandler($event)"
+      (camerasFound)="camerasFoundHandler($event)"
+      (permissionResponse)="camerasPermissionHandler($event)"
+      (scanError)="cameraScanErrorHandler($event)"
+      [enable]="scannerEnabled">
+    </zxing-scanner>
+
+    <!-- Guía de escaneo -->
+    <div class="scanner-overlay">
+      <div class="scanner-frame"></div>
+      <p class="scanner-text">Coloca el código QR dentro del recuadro</p>
+    </div>
+
+    <!-- Mensaje de error del scanner -->
+    @if (scannerErrorMessage) {
+      <div class="scanner-error">
+        <ion-icon name="warning-outline"></ion-icon>
+        <p>{{ scannerErrorMessage }}</p>
+      </div>
+    }
+
+    <!-- Selector de cámaras -->
+    @if (availableDevices.length > 1) {
+      <div class="camera-selector">
+        <ion-button size="small" fill="clear" (click)="changeDevice(availableDevices[availableDevices.indexOf(currentDevice!) + 1 >= availableDevices.length ? 0 : availableDevices.indexOf(currentDevice!) + 1].deviceId)">
+          <ion-icon name="camera-reverse-outline" slot="start"></ion-icon>
+          Cambiar cámara
+        </ion-button>
+      </div>
+    }
+  </div>
+
+  <!-- Información de pedido escaneado -->
+  @if (scannedOrder) {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-badge [color]="getStatusColor(scannedOrder.status)" class="status-badge">
+            {{ getStatusText(scannedOrder.status) }}
+          </ion-badge>
+          Pedido #{{ scannedOrder.id.substring(0, 6) }}
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-list>
+          <ion-item lines="none">
+            <ion-label>
+              <h2>Fecha de consumo</h2>
+              <p>{{ scannedOrder.consumptionDate | date:'fullDate':'':'es' }}</p>
+            </ion-label>
+          </ion-item>
+
+          <ion-item>
+            <ion-label>
+              <h2>Platillos</h2>
+            </ion-label>
+          </ion-item>
+
+          @for (dish of scannedOrder.selectedDishes; track dish.dishId) {
+            <ion-item lines="none" class="dish-item">
+              <ion-label>
+                <p>{{ dish.name }}</p>
+              </ion-label>
+              <ion-badge slot="end">{{ dish.category }}</ion-badge>
+            </ion-item>
+          }
+
+          <ion-item lines="none">
+            <ion-label>
+              <h2>Total</h2>
+              <p>S/{{ scannedOrder.cost.total | number:'1.2-2' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+
+        <div class="action-buttons">
+          @if (scannedOrder.status === 'pending' || scannedOrder.status === 'emergency') {
+            <ion-button expand="block" color="success" (click)="updateOrderStatus(scannedOrder.id, 'completed')">
+              <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+              Marcar como completado
+            </ion-button>
+            <ion-button expand="block" color="danger" fill="outline" (click)="updateOrderStatus(scannedOrder.id, 'cancelled')">
+              <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+              Cancelar pedido
+            </ion-button>
+          } @else {
+            <ion-text color="medium" class="ion-text-center">
+              <p>Este pedido ya ha sido procesado</p>
+            </ion-text>
+          }
+        </div>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  <!-- Historial de pedidos escaneados recientes -->
+  @if (recentlyScannedOrders.length > 0) {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          Pedidos escaneados recientemente
+          <ion-button fill="clear" size="small" (click)="clearRecentlyScannedOrders()">
+            Limpiar
+          </ion-button>
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-list>
+          @for (item of recentlyScannedOrders; track item.order.id) {
+            <ion-item button (click)="scannedOrder = item.order">
+              <ion-label>
+                <h3>Pedido #{{ item.order.id.substring(0, 6) }}</h3>
+                <p>{{ item.timestamp | date:'short':'':'es' }}</p>
+              </ion-label>
+              <ion-badge slot="end" [color]="getStatusColor(item.order.status)">
+                {{ getStatusText(item.order.status) }}
+              </ion-badge>
+            </ion-item>
+          }
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+  }
+</ion-content>

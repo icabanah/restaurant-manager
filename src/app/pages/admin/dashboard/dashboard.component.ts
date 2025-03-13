@@ -195,7 +195,7 @@ export class DashboardComponent implements OnInit {
 
   editMenu(menu: Menu) {
     if (!menu.id) return;
-    this.router.navigate(['/menus/management'], {
+    this.router.navigate(['/admin/menus'], {
       queryParams: { menuId: menu.id }
     });
   }

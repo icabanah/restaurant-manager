@@ -1,0 +1,121 @@
+// src/app/pages/admin/orders/qr-scanner/qr-scanner.component.scss
+.scanner-container {
+    position: relative;
+    width: 100%;
+    height: 60vh;
+    max-height: 400px;
+    overflow: hidden;
+    background-color: #000;
+  }
+  
+  zxing-scanner {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+  }
+  
+  .scanner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+  }
+  
+  .scanner-frame {
+    width: 250px;
+    height: 250px;
+    border: 2px solid var(--ion-color-primary);
+    border-radius: 12px;
+    box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+    animation: scan 2s infinite;
+  }
+  
+  .scanner-text {
+    color: white;
+    margin-top: 16px;
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  
+  .scanner-error {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    z-index: 20;
+  }
+  
+  .scanner-error ion-icon {
+    margin-right: 8px;
+    font-size: 20px;
+  }
+  
+  .camera-selector {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 20;
+  }
+  
+  .action-buttons {
+    margin-top: 16px;
+  }
+  
+  .dish-item {
+    padding-left: 16px;
+  }
+  
+  .status-badge {
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  
+  @keyframes scan {
+    0% {
+      box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.4);
+    }
+    100% {
+      box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+    }
+  }
+  
+  // Animation for the scan line
+  .scanner-frame::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: rgba(var(--ion-color-success-rgb), 0.5);
+    box-shadow: 0 0 8px var(--ion-color-success);
+    animation: scanline 2s linear infinite;
+  }
+  
+  @keyframes scanline {
+    0% {
+      top: 0;
+    }
+    50% {
+      top: 100%;
+    }
+    100% {
+      top: 0;
+    }
+  }

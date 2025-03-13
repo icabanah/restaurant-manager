@@ -2,18 +2,21 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonContent, 
-  IonButtons, 
-  IonButton, 
+import {
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButtons,
+  IonButton,
   IonMenuButton,
-  IonCard, 
-  IonCardContent, 
-  IonCardHeader, 
-  IonCardTitle, 
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
+  IonGrid,
+  IonRow,
+  IonCol,
   IonIcon,
   IonMenu,
   IonList,
@@ -28,11 +31,11 @@ import {
   ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { 
-  logOutOutline, 
-  menuOutline, 
-  peopleOutline, 
-  restaurantOutline, 
+import {
+  logOutOutline,
+  menuOutline,
+  peopleOutline,
+  restaurantOutline,
   listOutline,
   alertOutline,
   checkmarkCircleOutline,
@@ -78,6 +81,9 @@ interface DashboardStats {
     IonCard,
     IonCardHeader,
     IonCardTitle,
+    IonGrid,
+    IonRow,
+    IonCol,
     IonCardContent,
     IonIcon,
     IonMenu,
@@ -112,11 +118,11 @@ export class DashboardComponent implements OnInit {
   menus: Menu[] = [];
 
   constructor() {
-    addIcons({ 
-      logOutOutline, 
-      menuOutline, 
-      peopleOutline, 
-      restaurantOutline, 
+    addIcons({
+      logOutOutline,
+      menuOutline,
+      peopleOutline,
+      restaurantOutline,
       listOutline,
       alertOutline,
       checkmarkCircleOutline,
@@ -142,14 +148,14 @@ export class DashboardComponent implements OnInit {
   async loadDashboardData() {
     this.loading = true;
     try {
-      this.menus = await this.menuService.getMenusForDate( this.dateService.setYesterday(new Date()), this.dateService.setTomorrow(new Date()) );
-      
+      this.menus = await this.menuService.getMenusForDate(this.dateService.setYesterday(new Date()), this.dateService.setTomorrow(new Date()));
+
       // Calcular estadísticas de menús activos
       this.stats.activeMenus = this.menus.filter((menu: Menu) => menu.active).length;
 
       // Obtener todas las órdenes y calcular estadísticas
       const orders = await this.orderService.getOrders();
-      
+
       this.stats.totalOrders = orders.length;
       this.stats.pendingOrders = orders.filter((order: Order) => order.status === 'pending').length;
       this.stats.completedOrders = orders.filter((order: Order) => order.status === 'completed').length;
@@ -176,8 +182,8 @@ export class DashboardComponent implements OnInit {
         {
           text: 'Crear',
           handler: () => {
-            this.router.navigate(['/admin/menus/management'], { 
-              queryParams: { emergency: true } 
+            this.router.navigate(['/admin/menus/management'], {
+              queryParams: { emergency: true }
             });
           }
         }
@@ -189,8 +195,8 @@ export class DashboardComponent implements OnInit {
 
   editMenu(menu: Menu) {
     if (!menu.id) return;
-    this.router.navigate(['/menus/management'], { 
-      queryParams: { menuId: menu.id } 
+    this.router.navigate(['/menus/management'], {
+      queryParams: { menuId: menu.id }
     });
   }
 

@@ -68,10 +68,16 @@ export class OrderService {
         throw new Error('Ya tienes un pedido para este menú');
       }
 
-      // Verificar que el usuario no tenga una orden existente activa
+      // (Verificar si ya tiene un pedido activo para la misma fecha de consumo)
       const existingActiveOrders = await this.getUserActiveOrders(userId);
-      if (existingActiveOrders.length > 0) {
-        throw new Error('Ya tienes un pedido activo. No puedes crear otro hasta que el actual sea completado o cancelado.');
+      const sameDay = existingActiveOrders.some(order => {
+        const orderDate = new Date(order.consumptionDate);
+        const newOrderDate = new Date(consumptionDate);
+        return orderDate.toDateString() === newOrderDate.toDateString();
+      });
+
+      if (sameDay) {
+        throw new Error('Ya tienes un pedido activo para esta fecha. No puedes tener múltiples pedidos para el mismo día.');
       }
 
       // Validar que el menú está aceptando pedidos (excepto para emergencias)
@@ -216,7 +222,7 @@ export class OrderService {
   /**
    * Verifica si un usuario ya tiene una orden para un menú específico
    */
-  private async getUserOrderForMenu(userId: string, menuId: string): Promise<Order | null> {
+  async getUserOrderForMenu(userId: string, menuId: string): Promise<Order | null> {
     const q = query(
       collection(this.firestore, 'orders'),
       where('userId', '==', userId),
@@ -224,9 +230,9 @@ export class OrderService {
     );
 
     const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
+    if (snapshot.empty) return null; // No hay órdenes para este menú
 
-    return this.mapOrderDocument(snapshot.docs[0].id, snapshot.docs[0].data());
+    return this.mapOrderDocument(snapshot.docs[0].id, snapshot.docs[0].data()); // Retorna la primera orden encontrada
   }
 
   /**

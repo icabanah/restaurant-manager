@@ -56,10 +56,13 @@ export class MenuListComponent implements OnInit {
   private toastController = inject(ToastController);
   private authService = inject(AuthService);
 
+  orderedMenuIds: Set<string> = new Set();
+
   menus: Menu[] = [];
 
   async ngOnInit() {
     await this.loadMenus();
+    await this.loadUserOrders();
   }
 
   async loadMenus() {
@@ -76,11 +79,30 @@ export class MenuListComponent implements OnInit {
     }
   }
 
+  async loadUserOrders() {
+    try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) return;
+      
+      const userOrders = await this.orderService.getUserOrders(currentUser.id);
+      
+      // Guardar los IDs de los menús que ya han sido ordenados
+      this.orderedMenuIds = new Set(
+        userOrders.map(order => order.menuId)
+      );
+    } catch (error) {
+      await this.showToast('Error al cargar los pedidos del usuario', 'danger');
+    }
+  }
+
   canOrder(menu: Menu): boolean {
+    if (!menu.id) return false;
+    
     const now = new Date();
     return menu.active &&
       menu.status === 'accepting_orders' &&
-      now < menu.orderDeadline;
+      now < menu.orderDeadline &&
+      !this.orderedMenuIds.has(menu.id); // Verificar si ya ha ordenado este menú
   }
 
   async orderMenu(menu: Menu) {
@@ -120,6 +142,7 @@ export class MenuListComponent implements OnInit {
         );
         await this.showToast('Pedido realizado con éxito');
         await this.loadMenus();
+        await this.loadUserOrders();
       }
     } catch (error: any) {
       await this.showToast(error.message || 'Error al realizar el pedido', 'danger');

@@ -86,9 +86,9 @@ export class MenuListComponent implements OnInit {
       
       const userOrders = await this.orderService.getUserOrders(currentUser.id);
       
-      // Guardar los IDs de los menús que ya han sido ordenados
+      // Inicializar con un Set vacío y agregar solo si hay órdenes
       this.orderedMenuIds = new Set(
-        userOrders.map(order => order.menuId)
+        userOrders?.map(order => order.menuId) || []
       );
     } catch (error) {
       await this.showToast('Error al cargar los pedidos del usuario', 'danger');

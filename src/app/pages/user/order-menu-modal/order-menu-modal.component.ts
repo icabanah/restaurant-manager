@@ -53,6 +53,8 @@ interface OrderFormModel {
 })
 export class OrderMenuModalComponent implements OnInit {
   @Input() menu!: Menu;
+  @Input() selectedDishes: MenuDish[] = [];
+  @Input() isEditMode = false;
 
   orderForm: FormGroup = this.formBuilder.group({
     starter: ['none'],
@@ -66,12 +68,33 @@ export class OrderMenuModalComponent implements OnInit {
     private modalCtrl: ModalController,
     private menuPriceService: MenuPriceService,
     private toastController: ToastController
-  ) {}
-    
+  ) { }
+
 
   ngOnInit(): void {
     // Si necesitamos realizar alguna inicialización adicional
     this.validateMenuInput();
+    
+    // Si estamos en modo edición, preseleccionar los platos
+    if (this.isEditMode && this.selectedDishes.length > 0) {
+      this.presetSelectedDishes();
+    }
+  }
+
+  private presetSelectedDishes(): void {
+    // Para cada tipo de plato, encontrar el seleccionado previamente
+    const starter = this.selectedDishes.find(dish => dish.category === 'entrada');
+    const mainCourse = this.selectedDishes.find(dish => dish.category === 'fondo');
+    const beverage = this.selectedDishes.find(dish => dish.category === 'bebida');
+    const dessert = this.selectedDishes.find(dish => dish.category === 'postre');
+    
+    // Actualizar el formulario con las selecciones previas
+    this.orderForm.patchValue({
+      starter: starter ? starter.dishId : 'none',
+      mainCourse: mainCourse ? mainCourse.dishId : 'none',
+      beverage: beverage ? beverage.dishId : '',
+      dessert: dessert ? dessert.dishId : 'none'
+    });
   }
 
   private validateMenuInput(): void {

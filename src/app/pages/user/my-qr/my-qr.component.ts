@@ -22,7 +22,8 @@ import {
   IonRefresherContent,
   IonSkeletonText,
   IonText,
-  ToastController
+  ToastController, 
+  ModalController
 } from '@ionic/angular/standalone';
 import { OrderService } from '../../../services/order.service';
 import { AuthService } from '../../../services/auth.service';
@@ -41,6 +42,8 @@ import {
 import { QRCodeComponent } from 'angularx-qrcode';
 import { RouterModule } from '@angular/router';
 import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-button.component';
+import { MenuService } from 'src/app/services/menu.service';
+import { OrderMenuModalComponent } from '../order-menu-modal/order-menu-modal.component';
 
 @Component({
   selector: 'app-my-qr',
@@ -76,8 +79,10 @@ import { LogoutButtonComponent } from 'src/app/shared/logout-button/logout-butto
 })
 export class MyQrComponent implements OnInit {
   private orderService = inject(OrderService);
+  private menuService = inject(MenuService);
   private authService = inject(AuthService);
   private toastController = inject(ToastController);
+  private modalController = inject(ModalController);
 
   orders: Order[] = [];
   activeOrder: Order | null = null;
@@ -148,6 +153,49 @@ export class MyQrComponent implements OnInit {
       this.showToast('Error al cargar pedidos', 'danger');
     } finally {
       this.loading = false;
+    }
+  }
+
+  // En my-qr.component.ts
+  async editOrder(order: Order) {
+    try {
+      // Verificar si aún estamos dentro del plazo de edición
+      const menu = await this.menuService.getMenuById(order.menuId);
+
+      if (!menu) {
+        await this.showToast('No se encontró el menú asociado', 'danger');
+        return;
+      }
+
+      if (new Date() > menu.orderDeadline) {
+        await this.showToast('El plazo para modificar este pedido ha expirado', 'warning');
+        return;
+      }
+
+      // Crear y presentar el modal de edición
+      const modal = await this.modalController.create({
+        component: OrderMenuModalComponent,
+        componentProps: {
+          menu: menu,
+          selectedDishes: order.selectedDishes,
+          isEditMode: true
+        }
+      });
+      await modal.present();
+
+      // Manejar el resultado del modal
+      const result = await modal.onDidDismiss();
+      if (result?.data?.confirmed) {
+        await this.orderService.updateOrderDishes(
+          order.id,
+          result.data.dishes,
+          result.data.total
+        );
+        await this.showToast('Pedido actualizado con éxito');
+        await this.loadUserOrders();
+      }
+    } catch (error: any) {
+      await this.showToast(error.message || 'Error al editar el pedido', 'danger');
     }
   }
 

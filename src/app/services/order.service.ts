@@ -330,6 +330,61 @@ export class OrderService {
   }
 
   /**
+   * Actualiza los platillos de una orden existente
+   */
+  async updateOrderDishes(
+    orderId: string, 
+    selectedDishes: MenuDish[], 
+    total: number
+  ): Promise<void> {
+    try {
+      // Obtener la orden actual
+      const orderRef = doc(this.firestore, 'orders', orderId);
+      const orderDoc = await getDoc(orderRef);
+      
+      if (!orderDoc.exists()) { // Verificar si la orden existe
+        throw new Error('Pedido no encontrado');
+      }
+      
+      const orderData = orderDoc.data(); // Obtener los datos de la orden
+      
+      // Verificar que la orden está en estado pendiente
+      if (orderData['status'] !== 'pending') {
+        throw new Error('Solo se pueden modificar pedidos pendientes');
+      }
+      
+      // Verificar que no ha pasado la fecha límite de pedido
+      const menuId = orderData['menuId'];
+      const menu = await this.getMenuById(menuId);
+      
+      if (!menu || new Date() > menu.orderDeadline) { // Verificar si el menú existe y si la fecha límite ha pasado
+        throw new Error('El plazo para modificar este pedido ha expirado');
+      }
+      
+      // Validar la composición del pedido
+      const orderValidation = this.menuPriceService.validateMenuComposition(selectedDishes);
+      if (!orderValidation.isValid) {
+        throw new Error(orderValidation.message);
+      }
+      
+      // Actualizar la orden
+      await updateDoc(orderRef, {
+        selectedDishes,
+        cost: {
+          total,
+          companyShare: total * 0.7,
+          employeeShare: total * 0.3
+        },
+        lastUpdated: new Date()
+      });
+      
+    } catch (error) {
+      console.error('Error updating order dishes:', error);
+      throw new Error('Error al actualizar el pedido: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    }
+  }
+  
+  /**
    * Cancela una orden y actualiza el contador del menú
    */
   async cancelOrder(orderId: string): Promise<void> {

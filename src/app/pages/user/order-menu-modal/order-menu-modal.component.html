@@ -4,11 +4,12 @@
     <ion-buttons slot="start">
       <ion-button (click)="dismiss()">Cancelar</ion-button>
     </ion-buttons>
-    <ion-title>Realizar Pedido</ion-title>
+    <ion-title>{{ isEditMode ? 'Editar Pedido' : 'Realizar Pedido' }}</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="confirmOrder()" [disabled]="!isValidOrder()">
-        Confirmar
+        {{ isEditMode ? 'Actualizar' : 'Confirmar' }}
       </ion-button>
+      
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

@@ -97,6 +97,34 @@ export class MenuService {
     }
   }
 
+async getMenuById(menuId: string): Promise<Menu | null> {
+  try {
+    const menuRef = doc(this.firestore, 'menus', menuId);
+    const menuDoc = await getDoc(menuRef);
+
+    if (!menuDoc.exists()) {
+      return null;
+    }
+
+    const data = menuDoc.data();
+    return {
+      id: menuDoc.id,
+      name: data['name'], // 
+      description: data['description'],
+      date: this.dateService.fromFirestore(data['date']),
+      price: data['price'],
+      active: data['active'],
+      orderDeadline: this.dateService.fromFirestore(data['orderDeadline']),
+      status: data['status'],
+      currentOrders: data['currentOrders'],
+      dishes: data['dishes']
+    };
+  } catch (error) {
+    console.error('Error getting menu by ID:', error);
+    throw new Error('Error al obtener el menú');
+  }
+}
+
   async updateMenu(id: string, updates: Partial<Menu>): Promise<void> {
     const menuRef = doc(this.firestore, 'menus', id);
     const updateData = { ...updates };
